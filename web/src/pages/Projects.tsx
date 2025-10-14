@@ -123,15 +123,17 @@ const ProjectsSection = memo(function ProjectsSection({
           return (
             <li key={project.id} className="card project-card">
               {project.cover && (
-                <img
-                  src={project.cover}
-                  alt={title || fallbackTitle}
-                  loading="lazy"
-                  decoding="async"
-                  width={960}
-                  height={540}
-                  className="project-cover"
-                />
+                <div className="project-cover-wrapper">
+                  <img
+                    src={project.cover}
+                    alt={title || fallbackTitle}
+                    loading="lazy"
+                    decoding="async"
+                    width={960}
+                    height={540}
+                    className="project-cover"
+                  />
+                </div>
               )}
               <div className="card-body">
                 <h2>{title || fallbackTitle}</h2>

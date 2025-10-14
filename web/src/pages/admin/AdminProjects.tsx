@@ -234,7 +234,9 @@ export default function AdminProjects() {
           />
         </label>
         {newProject.cover && (
-          <img src={newProject.cover} alt="Cover preview" className="project-cover-preview" />
+          <div className="project-cover-preview">
+            <img src={newProject.cover} alt="Cover preview" />
+          </div>
         )}
         <label>
           Order
@@ -289,7 +291,9 @@ export default function AdminProjects() {
                 />
               </label>
               {project.cover && (
-                <img src={project.cover} alt="Cover preview" className="project-cover-preview" />
+                <div className="project-cover-preview">
+                  <img src={project.cover} alt="Cover preview" />
+                </div>
               )}
               <label>
                 Order

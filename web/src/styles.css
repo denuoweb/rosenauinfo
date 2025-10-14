@@ -405,13 +405,31 @@ pre, code {
   margin:0;
   font-size: clamp(1rem, .95rem + 0.3vw, 1.15rem);
 }
+.project-cover-wrapper,
 .project-cover-preview {
-  width: min(100%, 320px);
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
   border-radius: var(--radius-md);
+  aspect-ratio: 16 / 9;
   border: 1px solid var(--glass-border);
   box-shadow: var(--card-shadow);
+  background: rgba(14,165,233,0.08);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  padding: clamp(0.5rem, 0.4rem + 0.8vw, 1rem);
+}
+.project-cover-wrapper { width: 100%; }
+.project-cover-preview {
+  width: min(100%, 320px);
+  margin-top:.75rem;
+}
+.project-cover-wrapper img,
+.project-cover-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 .resume-upload-grid {
   display:grid;
@@ -463,11 +481,7 @@ pre, code {
 
 .project-card { gap: clamp(0.8rem, 0.6rem + 0.8vw, 1.4rem); }
 .project-cover {
-  border-radius: var(--radius-md);
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  box-shadow: var(--card-shadow);
+  display:block;
 }
 .project-card .card-body { display:grid; gap:.75rem; }
 .project-card h2 { font-size: var(--font-size-lg); margin:0; }
