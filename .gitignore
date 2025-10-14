@@ -1,0 +1,8 @@
+node_modules
+.DS_Store
+web/dist
+functions/lib
+.env
+web/.env
+.firebase/
+.github/

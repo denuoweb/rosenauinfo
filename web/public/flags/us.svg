@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7410 3900" aria-labelledby="title">
+  <title>United States Flag</title>
+  <rect width="7410" height="3900" fill="#b22234"/>
+  <g fill="#fff">
+    <rect y="300" width="7410" height="300"/>
+    <rect y="900" width="7410" height="300"/>
+    <rect y="1500" width="7410" height="300"/>
+    <rect y="2100" width="7410" height="300"/>
+    <rect y="2700" width="7410" height="300"/>
+    <rect y="3300" width="7410" height="300"/>
+  </g>
+  <rect width="2964" height="2100" fill="#3c3b6e"/>
+  <g fill="#fff" transform="translate(370 350) scale(0.8)">
+    <polygon points="0,-252 74,-77 264,-77 110,29 164,204 0,104 -164,204 -110,29 -264,-77 -74,-77"/>
+  </g>
+</svg>
