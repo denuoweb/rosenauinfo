@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLoaderData, useNavigation } from 'react-router-dom'
-import { Suspense, memo, useMemo, use } from 'react'
+import { Suspense, memo, useMemo, use, useState, useCallback, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import ThemeSwitcher from './ThemeSwitcher'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -54,10 +54,59 @@ const Header = memo(function Header({
   language: SupportedLanguage
   contactEmail?: string
 }) {
+  const [copied, setCopied] = useState(false)
+  const resetTimer = useRef<number | null>(null)
   const contactLabel = language === 'ja' ? 'メール' : 'Email'
   const ariaLabel = contactEmail
     ? `${contactLabel}: ${contactEmail}`
     : contactLabel
+  const copyButtonLabel = language === 'ja' ? 'メールアドレスをコピー' : 'Copy email address'
+  const copiedLabel = language === 'ja' ? 'コピーしました' : 'Copied!'
+
+  const clearCopyTimer = useCallback(() => {
+    if (resetTimer.current !== null) {
+      window.clearTimeout(resetTimer.current)
+      resetTimer.current = null
+    }
+  }, [])
+
+  useEffect(() => clearCopyTimer, [clearCopyTimer])
+
+  const runFallbackCopy = useCallback((text: string) => {
+    if (typeof document === 'undefined') return
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.top = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    try {
+      document.execCommand('copy')
+    } finally {
+      document.body.removeChild(textarea)
+    }
+  }, [])
+
+  const handleCopyClick = useCallback(async () => {
+    if (!contactEmail) return
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(contactEmail)
+      } else {
+        runFallbackCopy(contactEmail)
+      }
+      setCopied(true)
+      clearCopyTimer()
+      resetTimer.current = window.setTimeout(() => {
+        setCopied(false)
+        resetTimer.current = null
+      }, 2000)
+    } catch {
+      setCopied(false)
+    }
+  }, [clearCopyTimer, contactEmail, runFallbackCopy])
+
   return (
     <nav className="topnav" aria-label={language === 'ja' ? '主要ナビゲーション' : 'Primary navigation'}>
       <div className="navcontent">
@@ -75,14 +124,41 @@ const Header = memo(function Header({
         </ul>
         <div className="navactions">
           {contactEmail && (
-            <a
-              href={`mailto:${contactEmail}`}
-              className="nav-contact"
-              aria-label={ariaLabel}
-              title={contactEmail}
-            >
-              {contactEmail}
-            </a>
+            <div className="nav-contact-group">
+              <a
+                href={`mailto:${contactEmail}`}
+                className="nav-contact"
+                aria-label={ariaLabel}
+                title={contactEmail}
+              >
+                {contactEmail}
+              </a>
+              <button
+                type="button"
+                className="nav-copy-btn"
+                onClick={handleCopyClick}
+                aria-label={copied ? copiedLabel : copyButtonLabel}
+                title={copied ? copiedLabel : copyButtonLabel}
+                data-copied={copied}
+              >
+                <svg
+                  className="nav-copy-icon"
+                  viewBox="0 0 20 20"
+                  role="img"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M6.5 5.5A1.5 1.5 0 0 1 8 4h7a1.5 1.5 0 0 1 1.5 1.5V13A1.5 1.5 0 0 1 15 14.5H8A1.5 1.5 0 0 1 6.5 13V5.5Zm1.5-.5a.5.5 0 0 0-.5.5V13a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V5.5a.5.5 0 0 0-.5-.5H8Z"
+                  />
+                  <path
+                    d="M4 7h-.5A1.5 1.5 0 0 0 2 8.5v7A1.5 1.5 0 0 0 3.5 17H11a1.5 1.5 0 0 0 1.5-1.5V15H11v.5a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5H4V7Z"
+                  />
+                </svg>
+              </button>
+              <span className="sr-only" aria-live="polite">
+                {copied ? copiedLabel : ''}
+              </span>
+            </div>
           )}
           <LanguageSwitcher />
           <ThemeSwitcher />
