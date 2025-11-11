@@ -205,11 +205,7 @@ const AppChrome = memo(function AppChrome({
   return (
     <div className="container app-shell">
       <span className="route-progress" data-active={navigationState !== 'idle'} aria-hidden="true" />
-      <div className="background-art" aria-hidden="true">
-        <span className="bg-shape bg-shape-1" />
-        <span className="bg-shape bg-shape-2" />
-        <span className="bg-shape bg-shape-3" />
-      </div>
+      <div className="background-art" aria-hidden="true" />
       <Header
         siteName={language === 'ja' ? site.name.ja || site.name.en : site.name.en || site.name.ja}
         navItems={navItems}
