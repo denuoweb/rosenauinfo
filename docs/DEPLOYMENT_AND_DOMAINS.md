@@ -71,7 +71,7 @@ Whenever Firebase updates IPs (rare), you’ll receive a notice. Update the Squa
 | Issue | Resolution |
 |-------|------------|
 | `firebase deploy` fails with Node version errors | Upgrade local Node (`nvm install 20 && nvm use 20`) before building. |
-| Storage uploads throw `storage/unauthorized` | Ensure `storage.rules` allow authenticated writes to `resumes/` and you’re logged in on the admin UI. Redeploy storage rules if needed. |
+| Storage uploads throw `storage/unauthorized` | Ensure the admin account is allowed by `storage.rules` (custom claim or UID allowlist) and you’re logged in on the admin UI. Redeploy storage rules if needed. |
 | Domain verification pending | Recheck TXT and A/AAAA records in Squarespace. Use `dig` or DNS checker to confirm they match Firebase instructions. |
 | HTTPS certificate stuck provisioning | Wait up to 24 hours. If it persists, remove/re-add the custom domain or contact Firebase support. |
 

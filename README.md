@@ -4,7 +4,7 @@ SPA with theme switching and Firebase Functions.
 ## Structure
 - `web/`: Vite + React 19 + TypeScript SPA
 - `functions/`: Firebase Functions (TypeScript)
-- Hosting rewrites: `/api/contact`, `/sitemap.xml`, SPA fallback
+- Hosting rewrites: `/sitemap.xml`, SPA fallback
 
 ## Quickstart
 1. Replace IDs in `.firebaserc` and `firebase.json`.
@@ -15,5 +15,6 @@ SPA with theme switching and Firebase Functions.
 ## Admin Panel
 - Enable **Email/Password** sign-in in Firebase Authentication and create an admin user.
 - Visit `/admin` in the deployed site (or `http://localhost:5173/admin` during development) and log in with that account.
-- From there you can edit the site name, homepage blurb, manage projects, update the resume URLs, and adjust contact copy while reviewing recent contact form submissions.
+- From there you can edit the site name, homepage blurb, manage projects, and update the resume URLs.
 - Every admin form now supports English and Japanese fields. Populate both so the language switcher (US / Japan flags) on the public site can render a complete experience in either language.
+- Lock down writes by setting an admin UID or custom claim in `firestore.rules` and `storage.rules` (replace `REPLACE_WITH_ADMIN_UID`).
