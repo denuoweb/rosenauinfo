@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const routes = ['/', '/projects', '/resume'] as const
+const routes = ['/', '/about', '/projects', '/resume', '/contact'] as const
 const forbiddenSnippets = [
   /Add a blurb/i,
   /admin panel/i,

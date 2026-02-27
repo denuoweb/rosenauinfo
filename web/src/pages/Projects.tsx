@@ -1,8 +1,10 @@
-import { useLoaderData } from 'react-router-dom'
+import { Link, useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, memo, useEffect, use } from 'react'
 import { listProjects } from '../lib/content'
 import { useLanguage } from '../lib/language'
 import { trackOutboundProjectLink } from '../lib/analytics'
+import { useSeo } from '../lib/seo'
+import type { AppShellContext } from '../components/Layout'
 
 type ProjectRecord = {
   id: string
@@ -31,41 +33,63 @@ export function HydrateFallback() {
 export function Component() {
   const { language } = useLanguage()
   const data = useLoaderData() as ProjectsLoaderData
+  const { site } = useOutletContext<AppShellContext>()
+  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+
+  useSeo({
+    title: `${displayName} | ${language === 'ja' ? 'プロジェクト' : 'Projects'}`,
+    description: language === 'ja'
+      ? `${displayName}の主要プロジェクト一覧です。`
+      : `${displayName}'s project portfolio, including live demos and source repositories.`,
+    path: '/projects'
+  })
 
   return (
     <Suspense fallback={<ProjectsSkeleton />}>
-      <ProjectsContent promise={data.projects} language={language} />
+      <ProjectsContent promise={data.projects} language={language} displayName={displayName} />
     </Suspense>
   )
 }
 
 export default Component
 
-function ProjectsContent({ promise, language }: { promise: Promise<ProjectRecord[]>; language: 'en' | 'ja' }) {
+function ProjectsContent({
+  promise,
+  language,
+  displayName
+}: {
+  promise: Promise<ProjectRecord[]>
+  language: 'en' | 'ja'
+  displayName: string
+}) {
   const projects = use(promise)
-  return <ProjectsSection projects={projects} language={language} />
+  return <ProjectsSection projects={projects} language={language} displayName={displayName} />
 }
 
 const ProjectsSection = memo(function ProjectsSection({
   projects,
-  language
+  language,
+  displayName
 }: {
   projects: ProjectRecord[]
   language: 'en' | 'ja'
+  displayName: string
 }) {
   const heading = language === 'ja' ? 'プロジェクト' : 'Projects'
   const neutralCopy = language === 'ja'
     ? '公開できるプロジェクトは近日追加予定です。'
     : 'Published projects are on the way—check back soon.'
+  const seoDescription = projects.length > 0
+    ? (language === 'ja'
+        ? `${displayName}のプロジェクト一覧。${projects.length}件を公開中。`
+        : `${displayName}'s project portfolio with ${projects.length} published projects.`)
+    : neutralCopy
 
-  if (projects.length === 0) {
-    return (
-      <section>
-        <h1>{heading}</h1>
-        <p className="muted">{neutralCopy}</p>
-      </section>
-    )
-  }
+  useSeo({
+    title: `${displayName} | ${heading}`,
+    description: seoDescription,
+    path: '/projects'
+  })
 
   useEffect(() => {
     const hosts = new Set<string>()
@@ -104,6 +128,15 @@ const ProjectsSection = memo(function ProjectsSection({
     }
   }, [projects.slice(0, 2).map(p => p.cover || '').join('|')])
 
+  if (projects.length === 0) {
+    return (
+      <section>
+        <h1>{heading}</h1>
+        <p className="muted">{neutralCopy}</p>
+      </section>
+    )
+  }
+
   return (
     <section>
       <h1>{heading}</h1>
@@ -136,7 +169,11 @@ const ProjectsSection = memo(function ProjectsSection({
                 </div>
               )}
               <div className="card-body">
-                <h2>{title || fallbackTitle}</h2>
+                <h2>
+                  <Link to={`/projects/${encodeURIComponent(project.id)}`} prefetch="intent">
+                    {title || fallbackTitle}
+                  </Link>
+                </h2>
                 {description && <p>{description}</p>}
               </div>
               <ProjectActions project={project} language={language} position={index + 1} />
@@ -162,17 +199,23 @@ const ProjectActions = memo(function ProjectActions({
 }) {
   const liveLabel = language === 'ja' ? 'ライブデモ' : 'Live demo'
   const sourceLabel = language === 'ja' ? 'ソースを見る' : 'View source'
+  const detailLabel = language === 'ja' ? '詳細ページ' : 'Project page'
   const accessibleTitle = project.title.en || project.title.ja || ''
   const liveAria = accessibleTitle ? `${liveLabel}: ${accessibleTitle}` : liveLabel
   const sourceAria = accessibleTitle ? `${sourceLabel}: ${accessibleTitle}` : sourceLabel
+  const detailAria = accessibleTitle ? `${detailLabel}: ${accessibleTitle}` : detailLabel
   const sourceHref = project.repo || (project.url && project.url.includes('github.com') ? project.url : undefined)
-
-  if (!project.url && !sourceHref) {
-    return null
-  }
 
   return (
     <div className="project-actions">
+      <Link
+        to={`/projects/${encodeURIComponent(project.id)}`}
+        className="button ghost"
+        aria-label={detailAria}
+        prefetch="intent"
+      >
+        {detailLabel}
+      </Link>
       {project.url && (
         <a
           href={project.url}

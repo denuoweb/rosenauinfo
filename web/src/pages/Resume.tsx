@@ -1,7 +1,9 @@
-import { useLoaderData } from 'react-router-dom'
+import { useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
 import { getPublicDoc } from '../lib/content'
 import { useLanguage } from '../lib/language'
+import { useSeo } from '../lib/seo'
+import type { AppShellContext } from '../components/Layout'
 
 type ResumeLoaderData = {
   resume: Promise<ResumeCopy>
@@ -35,10 +37,20 @@ export function HydrateFallback() {
 export function Component() {
   const { language } = useLanguage()
   const data = useLoaderData() as ResumeLoaderData
+  const { site } = useOutletContext<AppShellContext>()
+  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+
+  useSeo({
+    title: `${displayName} | ${language === 'ja' ? '履歴書' : 'Resume'}`,
+    description: language === 'ja'
+      ? `${displayName}の履歴書ページです。`
+      : `${displayName}'s resume, experience, and skills.`,
+    path: '/resume'
+  })
 
   return (
     <Suspense fallback={<ResumeSkeleton />}>
-      <ResumeContent promise={data.resume} language={language} />
+      <ResumeContent promise={data.resume} language={language} displayName={displayName} />
     </Suspense>
   )
 }
@@ -47,23 +59,30 @@ export default Component
 
 function ResumeContent({
   promise,
-  language
+  language,
+  displayName
 }: {
   promise: Promise<ResumeCopy>
   language: 'en' | 'ja'
+  displayName: string
 }) {
   const resume = use(promise)
-  return <ResumeSection language={language} resume={resume} />
+  return <ResumeSection language={language} resume={resume} displayName={displayName} />
 }
 
 function ResumeSection({
   language,
-  resume
+  resume,
+  displayName
 }: {
   language: 'en' | 'ja'
   resume: ResumeCopy
+  displayName: string
 }) {
   const heading = language === 'ja' ? '履歴書' : 'Resume'
+  const leadParagraph = language === 'ja'
+    ? `${displayName}の職務経歴、スキル、実績をまとめたページです。`
+    : `This page summarizes ${displayName}'s experience, skills, and project impact.`
   const url = language === 'ja' ? resume.jaUrl ?? resume.enUrl : resume.enUrl ?? resume.jaUrl
   const neutralCopy = language === 'ja'
     ? '履歴書は現在準備中です。近日中に公開いたします。'
@@ -95,10 +114,22 @@ function ResumeSection({
     ? (language === 'ja' ? `最終更新: ${resume.updatedAt}` : `Updated: ${resume.updatedAt}`)
     : null
   const hasContent = summaryParagraphs.length > 0 || localizedSections.some(section => section.items.length > 0 || section.title)
+  const seoDescription = summaryParagraphs[0]
+    ? `${displayName} — ${summaryParagraphs[0]}`
+    : (language === 'ja'
+        ? `${displayName}の履歴書ページです。`
+        : `${displayName}'s resume and work history.`)
+
+  useSeo({
+    title: `${displayName} | ${heading}`,
+    description: seoDescription,
+    path: '/resume'
+  })
 
   return (
     <section className="resume-page">
       <h1>{heading}</h1>
+      <p>{leadParagraph}</p>
       {updatedCopy && <p className="muted resume-meta">{updatedCopy}</p>}
       {url && (
         <div className="resume-download">

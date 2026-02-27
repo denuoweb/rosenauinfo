@@ -10,13 +10,17 @@ import type { AppLayoutLoaderData } from '../routes'
 const navLabels = {
   en: {
     home: 'Home',
+    about: 'About',
     resume: 'Resume',
-    projects: 'Projects'
+    projects: 'Projects',
+    contact: 'Contact'
   },
   ja: {
     home: 'ホーム',
+    about: '紹介',
     resume: '履歴書',
-    projects: 'プロジェクト'
+    projects: 'プロジェクト',
+    contact: '連絡先'
   }
 }
 
@@ -28,10 +32,16 @@ type NavItem = {
 
 type NavigationStatus = 'idle' | 'loading' | 'submitting'
 
-type SiteCopy = {
+export type ProfileLink = {
+  label: string
+  url: string
+}
+
+export type SiteCopy = {
   name: { en: string; ja: string }
   footerNote?: string
   contactEmail?: string
+  profileLinks: ProfileLink[]
   resume: {
     enUrl?: string
     jaUrl?: string
@@ -260,8 +270,10 @@ export default function Layout() {
 
   const navItems = useMemo<NavItem[]>(() => ([
     { to: '/', label: navLabels[language].home, end: true },
+    { to: '/about', label: navLabels[language].about },
     { to: '/resume', label: navLabels[language].resume },
-    { to: '/projects', label: navLabels[language].projects }
+    { to: '/projects', label: navLabels[language].projects },
+    { to: '/contact', label: navLabels[language].contact }
   ]), [language])
 
   return (
@@ -307,15 +319,81 @@ function normalizeSite(raw: Record<string, unknown> | null): SiteCopy {
   const resumeJaUrl = pick(raw?.resume_url_ja)
   const resumeJaStatus = pick(raw?.resume_ja_status)
   const contactEmail = pick(raw?.contactEmail ?? raw?.contact_email ?? raw?.email)
+  const profileLinks = normalizeProfileLinks(raw, pick)
 
   return {
     name: { en: nameEn, ja: nameJa },
     footerNote,
     contactEmail: contactEmail || undefined,
+    profileLinks,
     resume: {
       enUrl: resumeEnUrl || undefined,
       jaUrl: resumeJaUrl || undefined,
       jaStatus: resumeJaStatus || undefined
     }
+  }
+}
+
+function normalizeProfileLinks(raw: Record<string, unknown> | null, pick: (value: unknown) => string): ProfileLink[] {
+  if (!raw) return []
+
+  const knownFields: Array<{ label: string; value: unknown }> = [
+    { label: 'GitHub', value: raw.githubUrl ?? raw.github_url ?? raw.github },
+    { label: 'LinkedIn', value: raw.linkedinUrl ?? raw.linkedin_url ?? raw.linkedin },
+    { label: 'X', value: raw.xUrl ?? raw.x_url ?? raw.twitterUrl ?? raw.twitter_url ?? raw.twitter },
+    { label: 'YouTube', value: raw.youtubeUrl ?? raw.youtube_url ?? raw.youtube },
+    { label: 'Blog', value: raw.blogUrl ?? raw.blog_url ?? raw.blog },
+    { label: 'Portfolio', value: raw.website ?? raw.websiteUrl ?? raw.website_url }
+  ]
+
+  const fromKnown = knownFields
+    .map(entry => {
+      const url = normalizeExternalUrl(pick(entry.value))
+      if (!url) return null
+      return { label: entry.label, url }
+    })
+    .filter((entry): entry is ProfileLink => Boolean(entry))
+
+  const rawSameAs = raw.sameAs ?? raw.same_as ?? raw.profileLinks ?? raw.profile_links
+  const fromSameAs: ProfileLink[] = []
+
+  if (Array.isArray(rawSameAs)) {
+    rawSameAs.forEach((entry, index) => {
+      const url = normalizeExternalUrl(pick(entry))
+      if (url) {
+        fromSameAs.push({ label: `Profile ${index + 1}`, url })
+      }
+    })
+  } else {
+    pick(rawSameAs)
+      .split(/\n|,/)
+      .map(part => normalizeExternalUrl(part.trim()))
+      .filter((url): url is string => Boolean(url))
+      .forEach((url, index) => {
+        fromSameAs.push({ label: `Profile ${index + 1}`, url })
+      })
+  }
+
+  const deduped = new Map<string, ProfileLink>()
+  ;[...fromKnown, ...fromSameAs].forEach(link => {
+    if (!deduped.has(link.url)) {
+      deduped.set(link.url, link)
+    }
+  })
+
+  return Array.from(deduped.values())
+}
+
+function normalizeExternalUrl(value: string): string | null {
+  if (!value) return null
+  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`
+  try {
+    const parsed = new URL(withProtocol)
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return null
+    }
+    return parsed.toString()
+  } catch {
+    return null
   }
 }

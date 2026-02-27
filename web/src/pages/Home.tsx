@@ -3,6 +3,7 @@ import { Suspense, memo, use } from 'react'
 import { getPublicDoc } from '../lib/content'
 import { useLanguage } from '../lib/language'
 import type { AppShellContext } from '../components/Layout'
+import { useSeo } from '../lib/seo'
 
 type HomeLoaderData = {
   home: Promise<HomeCopy>
@@ -30,6 +31,13 @@ export function Component() {
   const { language } = useLanguage()
   const data = useLoaderData() as HomeLoaderData
   const { site } = useOutletContext<AppShellContext>()
+  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+
+  useSeo({
+    title: `${displayName} | Software Engineer | Portfolio`,
+    description: `${displayName} — software engineer. Portfolio, resume, and project work.`,
+    path: '/'
+  })
 
   return (
     <Suspense fallback={<HomeSkeleton />}>
@@ -60,11 +68,20 @@ const HomeSection = memo(function HomeSection({
   const neutralStub = language === 'ja'
     ? '詳しい紹介は近日公開予定です。'
     : 'A richer introduction is coming soon.'
+  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+  const leadParagraph = ensureNameMention(blurb, displayName, language) || neutralStub
+  const seoDescription = blurb || `${site.name.en || site.name.ja} — software engineer. Portfolio, resume, and project work.`
+
+  useSeo({
+    title: `${site.name.en || site.name.ja} | Software Engineer | Portfolio`,
+    description: seoDescription,
+    path: '/'
+  })
 
   return (
     <section className="home-hero">
       {greeting && <h1>{greeting}</h1>}
-      {blurb ? <p>{blurb}</p> : <p className="muted">{neutralStub}</p>}
+      <p className={blurb ? undefined : 'muted'}>{leadParagraph}</p>
       {links.length > 0 && (
         <nav className="home-links" aria-label={language === 'ja' ? '主要リンク' : 'Primary links'}>
           {links.map(link => (
@@ -87,6 +104,13 @@ function computeGreeting(language: 'en' | 'ja', site: AppShellContext['site']) {
   if (site.name.en) return `Hi, I'm ${site.name.en}.`
   if (site.name.ja) return `Hi, I'm ${site.name.ja}.`
   return ''
+}
+
+function ensureNameMention(text: string, name: string, language: 'en' | 'ja') {
+  if (!text) return ''
+  if (!name) return text
+  if (text.toLowerCase().includes(name.toLowerCase())) return text
+  return language === 'ja' ? `${name}は${text}` : `${name} is ${text}`
 }
 
 function HomeContent({

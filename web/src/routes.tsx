@@ -27,12 +27,24 @@ export const routes: RouteObject[] = [
         lazy: () => import('./pages/Home')
       },
       {
+        path: 'about',
+        lazy: () => import('./pages/About')
+      },
+      {
         path: 'projects',
         lazy: () => import('./pages/Projects')
       },
       {
+        path: 'projects/:projectId',
+        lazy: () => import('./pages/ProjectDetail')
+      },
+      {
         path: 'resume',
         lazy: () => import('./pages/Resume')
+      },
+      {
+        path: 'contact',
+        lazy: () => import('./pages/Contact')
       }
     ]
   },
