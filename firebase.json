@@ -21,6 +21,22 @@
     ],
     "rewrites": [
       {
+        "source": "/resume",
+        "function": "resumeHtml"
+      },
+      {
+        "source": "/resume/**",
+        "function": "resumeHtml"
+      },
+      {
+        "source": "/resume.html",
+        "function": "resumeHtml"
+      },
+      {
+        "source": "/resume.pdf",
+        "function": "resumePdf"
+      },
+      {
         "source": "/sitemap.xml",
         "function": "sitemap"
       },

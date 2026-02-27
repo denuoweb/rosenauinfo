@@ -4,7 +4,7 @@ SPA with theme switching and Firebase Functions.
 ## Structure
 - `web/`: Vite + React 19 + TypeScript SPA
 - `functions/`: Firebase Functions (TypeScript)
-- Hosting rewrites: `/sitemap.xml`, SPA fallback
+- Hosting rewrites: `/resume`, `/resume.pdf`, `/sitemap.xml`, then SPA fallback
 
 ## Quickstart
 1. Replace IDs in `.firebaserc` and `firebase.json`.
@@ -18,3 +18,8 @@ SPA with theme switching and Firebase Functions.
 - From there you can edit the site name, homepage blurb, manage projects, and update the resume URLs.
 - Every admin form now supports English and Japanese fields. Populate both so the language switcher (US / Japan flags) on the public site can render a complete experience in either language.
 - Lock down writes by setting an admin UID or custom claim in `firestore.rules` and `storage.rules` (replace `REPLACE_WITH_ADMIN_UID`).
+
+## Resume Surface
+- Canonical HTML resume endpoint: `/resume` (also available at `/resume.html`).
+- Canonical PDF endpoint: `/resume.pdf` (stable URL that redirects to the current uploaded file).
+- Both endpoints are server-rendered/function-backed so they work without client-side JavaScript.
