@@ -7,6 +7,7 @@ if (!getApps().length) {
 }
 
 const DEFAULT_SITE_URL = 'https://rosenau.info'
+const DEFAULT_PERSON_NAME = 'Jaron Rosenau'
 
 type ResumeSectionRecord = {
   id?: unknown
@@ -31,6 +32,38 @@ type ResumeRecord = {
   eta_ja?: unknown
   jaTargetDate?: unknown
   sections?: unknown
+}
+
+type SiteRecord = {
+  name_en?: unknown
+  name_ja?: unknown
+  name?: unknown
+  githubUrl?: unknown
+  github_url?: unknown
+  github?: unknown
+  linkedinUrl?: unknown
+  linkedin_url?: unknown
+  linkedin?: unknown
+  xUrl?: unknown
+  x_url?: unknown
+  twitterUrl?: unknown
+  twitter_url?: unknown
+  twitter?: unknown
+  website?: unknown
+  websiteUrl?: unknown
+  website_url?: unknown
+  blogUrl?: unknown
+  blog_url?: unknown
+  blog?: unknown
+  sameAs?: unknown
+  same_as?: unknown
+  profile_links?: unknown
+  profileLinks?: unknown
+}
+
+type ProfileLink = {
+  label: string
+  url: string
 }
 
 type NormalizedSection = {
@@ -101,6 +134,75 @@ function safeUrl(value: string): string | null {
   }
 }
 
+function toSafeUrl(value: unknown): string | null {
+  const raw = pick(value)
+  if (!raw) return null
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  return safeUrl(withProtocol)
+}
+
+function parseProfileLinks(raw: unknown): ProfileLink[] {
+  const normalizeEntry = (entry: string, fallbackLabel: string): ProfileLink | null => {
+    if (!entry) return null
+    const [labelPart, urlPart] = entry.includes('|')
+      ? entry.split('|', 2).map(part => part.trim())
+      : [fallbackLabel, entry.trim()]
+    const url = toSafeUrl(urlPart)
+    if (!url) return null
+    return {
+      label: labelPart || fallbackLabel,
+      url
+    }
+  }
+
+  if (Array.isArray(raw)) {
+    return raw
+      .map(item => pick(item))
+      .map((entry, index) => normalizeEntry(entry, `Profile ${index + 1}`))
+      .filter((entry): entry is ProfileLink => Boolean(entry))
+  }
+
+  return pick(raw)
+    .split(/\n|,/)
+    .map(entry => entry.trim())
+    .filter(Boolean)
+    .map((entry, index) => normalizeEntry(entry, `Profile ${index + 1}`))
+    .filter((entry): entry is ProfileLink => Boolean(entry))
+}
+
+function dedupeProfileLinks(links: ProfileLink[]): ProfileLink[] {
+  const map = new Map<string, ProfileLink>()
+  links.forEach(link => {
+    if (!map.has(link.url)) {
+      map.set(link.url, link)
+    }
+  })
+  return Array.from(map.values())
+}
+
+function personName(site: SiteRecord | null, language: 'en' | 'ja') {
+  const en = pick(site?.name_en ?? site?.name)
+  const ja = pick(site?.name_ja ?? site?.name)
+  if (language === 'ja') {
+    return ja || en || DEFAULT_PERSON_NAME
+  }
+  return en || ja || DEFAULT_PERSON_NAME
+}
+
+function profileLinks(site: SiteRecord | null): ProfileLink[] {
+  if (!site) return []
+  const known: ProfileLink[] = [
+    { label: 'GitHub', url: toSafeUrl(site.githubUrl ?? site.github_url ?? site.github) || '' },
+    { label: 'LinkedIn', url: toSafeUrl(site.linkedinUrl ?? site.linkedin_url ?? site.linkedin) || '' },
+    { label: 'X', url: toSafeUrl(site.xUrl ?? site.x_url ?? site.twitterUrl ?? site.twitter_url ?? site.twitter) || '' },
+    { label: 'Website', url: toSafeUrl(site.website ?? site.websiteUrl ?? site.website_url) || '' },
+    { label: 'Blog', url: toSafeUrl(site.blogUrl ?? site.blog_url ?? site.blog) || '' }
+  ].filter(link => Boolean(link.url))
+
+  const rawLinks = parseProfileLinks(site.sameAs ?? site.same_as ?? site.profileLinks ?? site.profile_links)
+  return dedupeProfileLinks([...known, ...rawLinks])
+}
+
 function preferredResumeUrl(doc: ResumeRecord | null, language: 'en' | 'ja'): string | null {
   if (!doc) return null
   const primary = language === 'ja'
@@ -159,6 +261,14 @@ async function loadResumeDoc(): Promise<ResumeRecord | null> {
   return snapshot.data() as ResumeRecord
 }
 
+async function loadSiteDoc(): Promise<SiteRecord | null> {
+  const snapshot = await getFirestore().collection('public').doc('site').get()
+  if (!snapshot.exists) {
+    return null
+  }
+  return snapshot.data() as SiteRecord
+}
+
 function resumeHtml({
   baseUrl,
   language,
@@ -166,7 +276,9 @@ function resumeHtml({
   updatedAt,
   eta,
   summary,
-  sections
+  sections,
+  displayName,
+  sameAsLinks
 }: {
   baseUrl: string
   language: 'en' | 'ja'
@@ -175,20 +287,25 @@ function resumeHtml({
   eta: string
   summary: string[]
   sections: NormalizedSection[]
+  displayName: string
+  sameAsLinks: ProfileLink[]
 }) {
   const title = language === 'ja' ? '履歴書' : 'Resume'
   const subtitle = language === 'ja'
     ? '職務経歴・スキル・実績'
     : 'Experience, skills, and impact'
   const description = language === 'ja'
-    ? 'ローゼナウ愛子の履歴書ページです。'
-    : "Aiko Rosenau's resume page."
+    ? `${displayName}の履歴書ページです。`
+    : `${displayName}'s resume page.`
   const downloadLabel = language === 'ja' ? '履歴書PDFを開く' : 'Open resume PDF'
   const neutral = language === 'ja'
     ? '履歴書データは現在準備中です。'
     : 'Resume data is currently being prepared.'
   const updatedLabel = language === 'ja' ? '最終更新' : 'Updated'
   const etaLabel = language === 'ja' ? '公開予定日' : 'Target publish date'
+  const leadText = language === 'ja'
+    ? `${displayName}の職務経歴、スキル、実績をまとめたページです。`
+    : `This page covers ${displayName}'s experience, skills, and measurable project impact.`
   const hasContent = summary.length > 0 || sections.length > 0
   const pdfLink = `/resume.pdf${language === 'ja' ? '?lang=ja' : ''}`
   const englishPath = '/resume?lang=en'
@@ -216,13 +333,14 @@ function resumeHtml({
   const structuredData = JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
-    name: `${title} | Aiko Rosenau`,
+    name: `${title} | ${displayName}`,
     url: `${baseUrl}/resume`,
     isPartOf: baseUrl,
     inLanguage: language === 'ja' ? 'ja' : 'en',
     mainEntity: {
       '@type': 'Person',
-      name: 'Aiko Rosenau'
+      name: displayName,
+      ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks.map(link => link.url) } : {})
     }
   })
 
@@ -231,11 +349,17 @@ function resumeHtml({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(title)} | Aiko Rosenau</title>
+    <title>${escapeHtml(title)} | ${escapeHtml(displayName)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
+    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content="${escapeHtml(`${title} | ${displayName}`)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${escapeHtml(`${baseUrl}/resume`)}" />
     <link rel="canonical" href="${escapeHtml(`${baseUrl}/resume`)}" />
     <link rel="alternate" hreflang="en" href="${escapeHtml(`${baseUrl}${englishPath}`)}" />
     <link rel="alternate" hreflang="ja" href="${escapeHtml(`${baseUrl}${japanesePath}`)}" />
+    <link rel="alternate" hreflang="x-default" href="${escapeHtml(`${baseUrl}/resume`)}" />
     <link rel="alternate" type="application/pdf" href="${escapeHtml(`${baseUrl}/resume.pdf`)}" />
     <style>
       :root { color-scheme: light; }
@@ -265,12 +389,14 @@ function resumeHtml({
         <a href="${escapeHtml(baseUrl)}">${escapeHtml(language === 'ja' ? 'サイトへ戻る' : 'Back to site')}</a>
       </div>
       <p class="subtitle">${escapeHtml(subtitle)}</p>
+      <p>${escapeHtml(leadText)}</p>
       ${metadataHtml}
       <nav class="links" aria-label="${escapeHtml(language === 'ja' ? '表示言語' : 'Display language')}">
         <a href="${escapeHtml(englishPath)}" hreflang="en">English</a>
         <a href="${escapeHtml(japanesePath)}" hreflang="ja">日本語</a>
         ${pdfUrl ? `<a href="${escapeHtml(pdfLink)}">${escapeHtml(downloadLabel)}</a>` : ''}
       </nav>
+      ${sameAsLinks.length > 0 ? `<nav class="links" aria-label="${escapeHtml(language === 'ja' ? '関連プロフィール' : 'Related profiles')}">${sameAsLinks.map(link => `<a href="${escapeHtml(link.url)}" rel="noopener">${escapeHtml(link.label)}</a>`).join('')}</nav>` : ''}
       ${hasContent ? `${summaryHtml}${sectionsHtml}` : `<p class="empty">${escapeHtml(neutral)}</p>`}
     </main>
   </body>
@@ -280,18 +406,32 @@ function resumeHtml({
 export async function resumeHtmlHandler(req: Request, res: Response) {
   const language = normalizeLanguage(req)
   try {
-    const doc = await loadResumeDoc()
+    const [doc, site] = await Promise.all([loadResumeDoc(), loadSiteDoc()])
     const baseUrl = getBaseUrl(req)
     const pdfUrl = preferredResumeUrl(doc, language)
     const summary = summaryParagraphs(doc, language)
     const sections = normalizeSections(doc, language)
     const updatedAt = pick(doc?.updatedAt ?? doc?.updated_at)
     const eta = pick(doc?.ja_eta ?? doc?.eta_ja ?? doc?.jaTargetDate)
+    const displayName = personName(site, language)
+    const sameAsLinks = profileLinks(site)
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'public, max-age=300')
     res.setHeader('Vary', 'Accept-Language')
-    res.status(200).send(resumeHtml({ baseUrl, language, pdfUrl, updatedAt, eta, summary, sections }))
+    res.status(200).send(
+      resumeHtml({
+        baseUrl,
+        language,
+        pdfUrl,
+        updatedAt,
+        eta,
+        summary,
+        sections,
+        displayName,
+        sameAsLinks
+      })
+    )
   } catch (error) {
     console.error('resumeHtmlHandler error:', error)
     res.setHeader('Content-Type', 'text/plain; charset=utf-8')
