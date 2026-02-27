@@ -5,16 +5,33 @@ const useMockData = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 
 const mockDocs: Record<string, any> = {
   site: {
-    name_en: 'Aiko Rosenau',
-    name_ja: 'ローゼナウ 愛子',
+    name_en: 'Jaron Rosenau',
+    name_ja: 'ジャロン ローゼナウ',
     footerNote: 'Creating helpful products since 2012',
-    contactEmail: 'hello@example.com'
+    contactEmail: 'hello@example.com',
+    github_url: 'https://github.com/denuoweb',
+    linkedin_url: 'https://www.linkedin.com/in/jaronrosenau'
   },
   home: {
-    blurb_en: 'Staff product designer focused on accessible experiences and high-performance teams.',
-    blurb_ja: 'アクセシビリティと高パフォーマンスなチーム作りに取り組むプロダクトデザイナーです。',
+    blurb_en: 'Software engineer focused on geospatial web systems, resilient platforms, and product delivery.',
+    blurb_ja: '地理空間ウェブシステムと安定したプロダクト開発に注力するソフトウェアエンジニアです。',
     links_en: 'Latest Case Study|/projects',
     links_ja: '最新の事例|/projects'
+  },
+  about: {
+    headline_en: 'Software Engineer',
+    headline_ja: 'ソフトウェアエンジニア',
+    intro_en: 'Jaron Rosenau builds reliable web platforms with a focus on geospatial products and practical UX.',
+    intro_ja: 'Jaron Rosenau は地理空間プロダクトと実用的な UX を重視した信頼性の高いウェブプラットフォームを構築しています。',
+    highlights_en: 'Geospatial web mapping\nTypeScript and Python services\nProduct-focused engineering',
+    highlights_ja: '地理空間ウェブマッピング\nTypeScript と Python サービス\nプロダクト志向の開発',
+    links: 'GitHub|https://github.com/denuoweb\nLinkedIn|https://www.linkedin.com/in/jaronrosenau'
+  },
+  contact: {
+    intro_en: 'Reach out to Jaron Rosenau for engineering roles, consulting, or collaboration.',
+    intro_ja: '採用、コンサルティング、共同開発のご相談は Jaron Rosenau までご連絡ください。',
+    availability_en: 'Typically responds within 1-2 business days.',
+    availability_ja: '通常 1-2 営業日以内に返信します。'
   },
   resume: {
     url_en: 'https://example.com/resume-en.pdf',

@@ -9,10 +9,12 @@ export default function AdminHome() {
   const [blurb, setBlurb] = useState<Bilingual>({ en: '', ja: '' })
   const [links, setLinks] = useState<Bilingual>({ en: '', ja: '' })
   const [contactEmail, setContactEmail] = useState('')
+  const [profileLinks, setProfileLinks] = useState({ github: '', linkedin: '' })
   const [savingSite, setSavingSite] = useState(false)
   const [savingBlurb, setSavingBlurb] = useState(false)
   const [savingLinks, setSavingLinks] = useState(false)
   const [savingContactEmail, setSavingContactEmail] = useState(false)
+  const [savingProfiles, setSavingProfiles] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -27,6 +29,10 @@ export default function AdminHome() {
         setContactEmail(
           ((data.contactEmail as string) || (data.contact_email as string) || (data.email as string) || '').trim()
         )
+        setProfileLinks({
+          github: ((data.githubUrl as string) || (data.github_url as string) || (data.github as string) || '').trim(),
+          linkedin: ((data.linkedinUrl as string) || (data.linkedin_url as string) || (data.linkedin as string) || '').trim()
+        })
       }
       const homeSnap = await getDoc(doc(db, 'public', 'home'))
       if (homeSnap.exists()) {
@@ -100,6 +106,23 @@ export default function AdminHome() {
       setMessage(trimmed ? 'Updated contact email' : 'Cleared contact email')
     } finally {
       setSavingContactEmail(false)
+    }
+  }
+
+  async function saveProfiles(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setSavingProfiles(true)
+    try {
+      const github = profileLinks.github.trim()
+      const linkedin = profileLinks.linkedin.trim()
+      await setDoc(doc(db, 'public', 'site'), {
+        github_url: github || null,
+        linkedin_url: linkedin || null
+      }, { merge: true })
+      setProfileLinks({ github, linkedin })
+      setMessage('Updated profile links')
+    } finally {
+      setSavingProfiles(false)
     }
   }
 
@@ -177,6 +200,32 @@ export default function AdminHome() {
         </label>
         <button type="submit" disabled={savingContactEmail}>
           {savingContactEmail ? 'Saving…' : 'Save Email'}
+        </button>
+      </form>
+
+      <form className="card form" onSubmit={saveProfiles}>
+        <h3>Profile Links</h3>
+        <p>These links are used on About/Contact pages and in structured data (`sameAs`).</p>
+        <label>
+          GitHub URL
+          <input
+            type="url"
+            value={profileLinks.github}
+            onChange={e => setProfileLinks(prev => ({ ...prev, github: e.target.value }))}
+            placeholder="https://github.com/your-handle"
+          />
+        </label>
+        <label>
+          LinkedIn URL
+          <input
+            type="url"
+            value={profileLinks.linkedin}
+            onChange={e => setProfileLinks(prev => ({ ...prev, linkedin: e.target.value }))}
+            placeholder="https://www.linkedin.com/in/your-handle"
+          />
+        </label>
+        <button type="submit" disabled={savingProfiles}>
+          {savingProfiles ? 'Saving…' : 'Save Profile Links'}
         </button>
       </form>
 
