@@ -34,6 +34,11 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
   --font-size-xl: clamp(1.6rem, 1.4rem + 0.85vw, 2.4rem);
   --skeleton-base: rgba(255,255,255,0.52);
   --skeleton-highlight: rgba(255,255,255,0.78);
+  --header-offset: 72px;
+  --field-bg: rgba(255,255,255,0.35);
+  --field-text: var(--text-color);
+  --dropdown-bg: #ffffff;
+  --dropdown-text: #111827;
 
   font-family: 'Inter', system-ui, Arial, sans-serif;
   line-height: 1.5;
@@ -53,7 +58,6 @@ body {
   font-size: var(--font-size-base);
   line-height: 1.65;
   font-weight: 400;
-  padding-top: 72px;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -65,15 +69,16 @@ pre, code {
 }
 
 .container {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
-  width: var(--content-max-width);
-  margin: 0 auto;
+  width: 100%;
 }
 .app-shell {
   position: relative;
   z-index: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  width: 100%;
+  padding-top: var(--header-offset);
 }
 .background-art {
   position: fixed;
@@ -416,6 +421,8 @@ pre, code {
   margin-top: var(--section-spacing);
 }
 .footer {
+  width: 100%;
+  margin-top: auto;
   padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
   border-top: 1px solid var(--glass-border);
   background: var(--glass-bg);
@@ -424,6 +431,11 @@ pre, code {
   align-items:center;
   gap: .5rem;
   text-align:center;
+}
+.footer-line {
+  width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 3vw, 1.5rem);
 }
 .footer-line small { color: var(--text-color-secondary); }
 
@@ -492,9 +504,14 @@ pre, code {
 .form label { display:grid; gap:.5rem; }
 input, textarea, select {
   padding:.6rem .7rem; border:1px solid var(--glass-border);
-  border-radius:10px; background: rgba(255,255,255,0.35);
-  color: var(--text-color);
+  border-radius:10px; background: var(--field-bg);
+  color: var(--field-text);
   width: 100%;
+}
+select option,
+select optgroup {
+  background: var(--dropdown-bg);
+  color: var(--dropdown-text);
 }
 textarea { resize: vertical; min-height: 6rem; }
 button {
@@ -620,7 +637,6 @@ label.checkbox-line input { width:auto; }
 }
 
 @media (max-width: 640px) {
-  body { padding-top: clamp(112px, 100px + 4vw, 140px); }
   .navcontent {
     flex-direction: column;
     align-items: center;

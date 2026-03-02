@@ -2,10 +2,30 @@ import { useEffect } from 'react'
 
 const DEFAULT_SITE_URL = 'https://rosenau.info'
 
+function isPlaceholderHostname(hostname: string) {
+  const normalized = hostname.toLowerCase()
+  return normalized === 'your-domain' ||
+    normalized.includes('your-domain') ||
+    normalized === 'yourdomain' ||
+    /(^|\.)example\.(com|org|net)$/i.test(normalized)
+}
+
 const configuredSiteUrl = (() => {
   const raw = (import.meta.env.VITE_SITE_URL as string | undefined)?.trim()
   if (!raw) return DEFAULT_SITE_URL
-  return raw.replace(/\/+$/, '')
+
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
+    if (
+      (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') ||
+      isPlaceholderHostname(parsed.hostname)
+    ) {
+      return DEFAULT_SITE_URL
+    }
+    return parsed.origin
+  } catch {
+    return DEFAULT_SITE_URL
+  }
 })()
 
 export type SeoOptions = {

@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet, useLoaderData, useNavigation } from 'react-router-dom'
 import { Suspense, memo, useMemo, use, useState, useCallback, useEffect, useRef } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import ThemeSwitcher from './ThemeSwitcher'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useLanguage } from '../lib/language'
@@ -54,11 +54,13 @@ export type AppShellContext = {
 }
 
 const Header = memo(function Header({
+  headerRef,
   siteName,
   navItems,
   language,
   contactEmail
 }: {
+  headerRef: RefObject<HTMLElement | null>
   siteName: string
   navItems: NavItem[]
   language: SupportedLanguage
@@ -118,7 +120,11 @@ const Header = memo(function Header({
   }, [clearCopyTimer, contactEmail, runFallbackCopy])
 
   return (
-    <nav className="topnav" aria-label={language === 'ja' ? '主要ナビゲーション' : 'Primary navigation'}>
+    <nav
+      ref={headerRef}
+      className="topnav"
+      aria-label={language === 'ja' ? '主要ナビゲーション' : 'Primary navigation'}
+    >
       <div className="navcontent">
         <Link to="/" className="brand" prefetch="intent">
           {siteName}
@@ -212,11 +218,44 @@ const AppChrome = memo(function AppChrome({
   navigationState: NavigationStatus
   children: ReactNode
 }) {
+  const headerRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const root = document.documentElement
+    const updateHeaderOffset = () => {
+      const nextHeight = Math.ceil(headerRef.current?.getBoundingClientRect().height ?? 72)
+      root.style.setProperty('--header-offset', `${nextHeight}px`)
+    }
+
+    updateHeaderOffset()
+
+    const header = headerRef.current
+    let observer: ResizeObserver | null = null
+
+    if (header && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        updateHeaderOffset()
+      })
+      observer.observe(header)
+    }
+
+    window.addEventListener('resize', updateHeaderOffset)
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updateHeaderOffset)
+      root.style.removeProperty('--header-offset')
+    }
+  }, [language, site.contactEmail])
+
   return (
     <div className="container app-shell">
       <span className="route-progress" data-active={navigationState !== 'idle'} aria-hidden="true" />
       <div className="background-art" aria-hidden="true" />
       <Header
+        headerRef={headerRef}
         siteName={language === 'ja' ? site.name.ja || site.name.en : site.name.en || site.name.ja}
         navItems={navItems}
         language={language}
