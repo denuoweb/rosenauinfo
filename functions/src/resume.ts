@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express'
 import { getApps, initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
+import { resolveSiteUrl } from './siteUrl.js'
 
 if (!getApps().length) {
   initializeApp()
 }
 
-const DEFAULT_SITE_URL = 'https://rosenau.info'
 const DEFAULT_PERSON_NAME = 'Jaron Rosenau'
 
 type ResumeSectionRecord = {
@@ -38,6 +38,11 @@ type SiteRecord = {
   name_en?: unknown
   name_ja?: unknown
   name?: unknown
+  footerNote?: unknown
+  footer_note?: unknown
+  contactEmail?: unknown
+  contact_email?: unknown
+  email?: unknown
   githubUrl?: unknown
   github_url?: unknown
   github?: unknown
@@ -74,24 +79,12 @@ type NormalizedSection = {
 
 const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
 
-function getBaseUrl(req: Request): string {
-  const configured = pick(process.env.SITE_URL)
-  if (configured) {
-    return configured.replace(/\/+$/, '')
-  }
-  const forwardedHost = pick(req.get('x-forwarded-host'))
-  const host = forwardedHost || pick(req.get('host'))
-  return host ? `https://${host}` : DEFAULT_SITE_URL
-}
-
 function normalizeLanguage(req: Request): 'en' | 'ja' {
   const queryLang = Array.isArray(req.query.lang) ? req.query.lang[0] : req.query.lang
-  const raw = pick(queryLang)
-  if (raw.toLowerCase().startsWith('ja')) {
-    return 'ja'
-  }
-  const acceptLanguage = pick(req.get('accept-language')).toLowerCase()
-  return acceptLanguage.includes('ja') ? 'ja' : 'en'
+  const raw = pick(queryLang).toLowerCase()
+  if (raw.startsWith('ja')) return 'ja'
+  if (raw.startsWith('en')) return 'en'
+  return 'en'
 }
 
 function toList(value: unknown): string[] {
@@ -203,6 +196,13 @@ function profileLinks(site: SiteRecord | null): ProfileLink[] {
   return dedupeProfileLinks([...known, ...rawLinks])
 }
 
+function footerCopy(site: SiteRecord | null, language: 'en' | 'ja') {
+  const custom = pick(site?.footerNote ?? site?.footer_note)
+  if (custom) return custom
+  const year = new Date().getFullYear()
+  return `© ${year} ${personName(site, language)}`
+}
+
 function preferredResumeUrl(doc: ResumeRecord | null, language: 'en' | 'ja'): string | null {
   if (!doc) return null
   const primary = language === 'ja'
@@ -278,7 +278,8 @@ function resumeHtml({
   summary,
   sections,
   displayName,
-  sameAsLinks
+  sameAsLinks,
+  footerText
 }: {
   baseUrl: string
   language: 'en' | 'ja'
@@ -289,7 +290,31 @@ function resumeHtml({
   sections: NormalizedSection[]
   displayName: string
   sameAsLinks: ProfileLink[]
+  footerText: string
 }) {
+  const nav = language === 'ja'
+    ? {
+        home: 'ホーム',
+        about: '紹介',
+        resume: '履歴書',
+        projects: 'プロジェクト',
+        contact: '連絡先',
+        back: 'サイトへ戻る',
+        displayLanguage: '表示言語',
+        relatedProfiles: '関連プロフィール',
+        summary: '概要'
+      }
+    : {
+        home: 'Home',
+        about: 'About',
+        resume: 'Resume',
+        projects: 'Projects',
+        contact: 'Contact',
+        back: 'Back to site',
+        displayLanguage: 'Display language',
+        relatedProfiles: 'Related profiles',
+        summary: 'Summary'
+      }
   const title = language === 'ja' ? '履歴書' : 'Resume'
   const subtitle = language === 'ja'
     ? '職務経歴・スキル・実績'
@@ -310,6 +335,15 @@ function resumeHtml({
   const pdfLink = `/resume.pdf${language === 'ja' ? '?lang=ja' : ''}`
   const englishPath = '/resume?lang=en'
   const japanesePath = '/resume?lang=ja'
+  const navigationHtml = [
+    { href: '/', label: nav.home },
+    { href: '/about', label: nav.about },
+    { href: '/resume', label: nav.resume },
+    { href: '/projects', label: nav.projects },
+    { href: '/contact', label: nav.contact }
+  ]
+    .map(item => `<a href="${escapeHtml(item.href)}"${item.href === '/resume' ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`)
+    .join('')
 
   const summaryHtml = summary
     .map(paragraph => `<p>${escapeHtml(paragraph)}</p>`)
@@ -321,7 +355,7 @@ function resumeHtml({
       const items = section.items.length
         ? `<ul>${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
         : ''
-      return `<section id="${escapeHtml(section.id)}">${heading}${items}</section>`
+      return `<section class="content-card" id="${escapeHtml(section.id)}">${heading}${items}</section>`
     })
     .join('')
 
@@ -362,43 +396,236 @@ function resumeHtml({
     <link rel="alternate" hreflang="x-default" href="${escapeHtml(`${baseUrl}/resume`)}" />
     <link rel="alternate" type="application/pdf" href="${escapeHtml(`${baseUrl}/resume.pdf`)}" />
     <style>
-      :root { color-scheme: light; }
-      body { margin: 0; font-family: "Inter", "Segoe UI", sans-serif; color: #0f172a; background: #f8fafc; line-height: 1.6; }
-      .wrap { max-width: 760px; margin: 0 auto; padding: 2rem 1rem 3rem; }
-      h1 { margin: 0; font-size: 2rem; letter-spacing: -0.02em; }
-      .subtitle { margin: 0.25rem 0 1rem; color: #475569; }
-      .meta { margin: 0.15rem 0; color: #334155; font-size: 0.92rem; }
-      .links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.25rem 0 1.5rem; }
-      .links a { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid #cbd5e1; padding: 0.4rem 0.85rem; color: #0f172a; text-decoration: none; font-size: 0.92rem; }
-      .links a:hover { border-color: #64748b; }
-      section { margin-top: 1.6rem; }
-      h2 { font-size: 1.15rem; margin: 0 0 0.55rem; }
-      ul { margin: 0; padding-left: 1.2rem; }
+      :root {
+        color-scheme: light;
+        --text: #111827;
+        --muted: #6b7280;
+        --accent: #0ea5e9;
+        --highlight: #22d3ee;
+        --glass-bg: rgba(255, 255, 255, 0.72);
+        --glass-border: rgba(17, 24, 39, 0.12);
+        --glass-shadow: 0 12px 30px rgba(2, 6, 23, 0.08);
+        --card-bg: rgba(255, 255, 255, 0.76);
+        --card-border: rgba(17, 24, 39, 0.12);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--text);
+        background:
+          radial-gradient(1200px 800px at 10% -10%, rgba(14, 165, 233, 0.12) 0%, transparent 60%),
+          #f8fafc;
+        font-family: "Inter", "Segoe UI", sans-serif;
+        line-height: 1.65;
+      }
+      a { color: inherit; }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+      .topnav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--glass-bg);
+        border-bottom: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(12px) saturate(140%);
+      }
+      .navcontent,
+      .footer-line {
+        width: min(100%, 1100px);
+        margin: 0 auto;
+        padding: 0 1.25rem;
+      }
+      .navcontent {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-top: 0.9rem;
+        padding-bottom: 0.9rem;
+        flex-wrap: wrap;
+      }
+      .brand {
+        font-size: 1.35rem;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .navmenu {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+      }
+      .navmenu a {
+        text-decoration: none;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+      .navmenu a:hover,
+      .navmenu a:focus-visible {
+        background: rgba(14, 165, 233, 0.12);
+        color: var(--accent);
+      }
+      .navmenu a[aria-current="page"] {
+        background: rgba(14, 165, 233, 0.16);
+        color: var(--accent);
+      }
+      .main {
+        width: min(100%, 980px);
+        margin: 0 auto;
+        padding: 2rem 1.25rem 3rem;
+      }
+      .hero {
+        padding: clamp(1.5rem, 1.2rem + 1.6vw, 2.4rem);
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(236, 72, 153, 0.14));
+        border: 1px solid rgba(14, 165, 233, 0.2);
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      }
+      .topline {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: baseline;
+        flex-wrap: wrap;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 1.5rem + 0.9vw, 2.4rem);
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        margin: 0.25rem 0 1rem;
+        color: #475569;
+        font-size: 1rem;
+      }
+      .meta-block {
+        display: grid;
+        gap: 0.15rem;
+        margin-top: 1rem;
+      }
+      .meta {
+        margin: 0;
+        color: #334155;
+        font-size: 0.92rem;
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin: 1.25rem 0 0;
+      }
+      .links a {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        padding: 0.48rem 0.9rem;
+        color: #0f172a;
+        background: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-size: 0.92rem;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      }
+      .links a:hover,
+      .links a:focus-visible {
+        background: rgba(14, 165, 233, 0.14);
+        border-color: rgba(14, 165, 233, 0.28);
+        color: var(--accent);
+      }
+      .content {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+      .content-card,
+      .empty {
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        background: var(--card-bg);
+        box-shadow: var(--glass-shadow);
+        padding: 1rem 1.15rem;
+      }
+      .content-card p:first-child,
+      .empty p:first-child { margin-top: 0; }
+      section { margin: 0; }
+      h2 {
+        font-size: 1.15rem;
+        margin: 0 0 0.55rem;
+      }
+      ul {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
       li + li { margin-top: 0.35rem; }
       p { margin: 0.8rem 0; }
-      .empty { margin-top: 1.2rem; padding: 0.9rem 1rem; border: 1px solid #cbd5e1; border-radius: 0.75rem; background: #ffffff; }
-      .topline { display: flex; justify-content: space-between; gap: 0.75rem; align-items: baseline; flex-wrap: wrap; }
-      .topline a { color: #334155; text-decoration: underline; }
+      .footer {
+        width: 100%;
+        margin-top: auto;
+        padding: 1rem 0 1.4rem;
+        border-top: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px) saturate(140%);
+      }
+      .footer-line {
+        text-align: center;
+      }
+      .footer-line small {
+        color: var(--muted);
+      }
+      @media (max-width: 720px) {
+        .navcontent {
+          justify-content: center;
+          text-align: center;
+        }
+        .navmenu {
+          justify-content: center;
+        }
+      }
     </style>
     <script type="application/ld+json">${structuredData}</script>
   </head>
   <body>
-    <main class="wrap">
-      <div class="topline">
-        <h1>${escapeHtml(title)}</h1>
-        <a href="${escapeHtml(baseUrl)}">${escapeHtml(language === 'ja' ? 'サイトへ戻る' : 'Back to site')}</a>
-      </div>
-      <p class="subtitle">${escapeHtml(subtitle)}</p>
-      <p>${escapeHtml(leadText)}</p>
-      ${metadataHtml}
-      <nav class="links" aria-label="${escapeHtml(language === 'ja' ? '表示言語' : 'Display language')}">
-        <a href="${escapeHtml(englishPath)}" hreflang="en">English</a>
-        <a href="${escapeHtml(japanesePath)}" hreflang="ja">日本語</a>
-        ${pdfUrl ? `<a href="${escapeHtml(pdfLink)}">${escapeHtml(downloadLabel)}</a>` : ''}
-      </nav>
-      ${sameAsLinks.length > 0 ? `<nav class="links" aria-label="${escapeHtml(language === 'ja' ? '関連プロフィール' : 'Related profiles')}">${sameAsLinks.map(link => `<a href="${escapeHtml(link.url)}" rel="noopener">${escapeHtml(link.label)}</a>`).join('')}</nav>` : ''}
-      ${hasContent ? `${summaryHtml}${sectionsHtml}` : `<p class="empty">${escapeHtml(neutral)}</p>`}
-    </main>
+    <div class="page">
+      <header class="topnav">
+        <div class="navcontent">
+          <a href="${escapeHtml(baseUrl)}" class="brand">${escapeHtml(displayName)}</a>
+          <nav class="navmenu" aria-label="${escapeHtml(language === 'ja' ? '主要ナビゲーション' : 'Primary navigation')}">
+            ${navigationHtml}
+          </nav>
+        </div>
+      </header>
+      <main class="main">
+        <section class="hero">
+          <div class="topline">
+            <h1>${escapeHtml(title)}</h1>
+            <a href="${escapeHtml(baseUrl)}">${escapeHtml(nav.back)}</a>
+          </div>
+          <p class="subtitle">${escapeHtml(subtitle)}</p>
+          <p>${escapeHtml(leadText)}</p>
+          ${metadataHtml ? `<div class="meta-block">${metadataHtml}</div>` : ''}
+          <nav class="links" aria-label="${escapeHtml(nav.displayLanguage)}">
+            <a href="${escapeHtml(englishPath)}" hreflang="en">English</a>
+            <a href="${escapeHtml(japanesePath)}" hreflang="ja">日本語</a>
+            ${pdfUrl ? `<a href="${escapeHtml(pdfLink)}">${escapeHtml(downloadLabel)}</a>` : ''}
+          </nav>
+          ${sameAsLinks.length > 0 ? `<nav class="links" aria-label="${escapeHtml(nav.relatedProfiles)}">${sameAsLinks.map(link => `<a href="${escapeHtml(link.url)}" rel="noopener">${escapeHtml(link.label)}</a>`).join('')}</nav>` : ''}
+        </section>
+        <section class="content" aria-label="${escapeHtml(nav.summary)}">
+          ${hasContent ? `${summary.map(paragraph => `<article class="content-card"><p>${escapeHtml(paragraph)}</p></article>`).join('')}${sectionsHtml}` : `<div class="empty"><p>${escapeHtml(neutral)}</p></div>`}
+        </section>
+      </main>
+      <footer class="footer">
+        <div class="footer-line">
+          <small>${escapeHtml(footerText)}</small>
+        </div>
+      </footer>
+    </div>
   </body>
 </html>`
 }
@@ -407,7 +634,7 @@ export async function resumeHtmlHandler(req: Request, res: Response) {
   const language = normalizeLanguage(req)
   try {
     const [doc, site] = await Promise.all([loadResumeDoc(), loadSiteDoc()])
-    const baseUrl = getBaseUrl(req)
+    const baseUrl = resolveSiteUrl(req)
     const pdfUrl = preferredResumeUrl(doc, language)
     const summary = summaryParagraphs(doc, language)
     const sections = normalizeSections(doc, language)
@@ -415,6 +642,7 @@ export async function resumeHtmlHandler(req: Request, res: Response) {
     const eta = pick(doc?.ja_eta ?? doc?.eta_ja ?? doc?.jaTargetDate)
     const displayName = personName(site, language)
     const sameAsLinks = profileLinks(site)
+    const footerText = footerCopy(site, language)
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'public, max-age=300')
@@ -429,7 +657,8 @@ export async function resumeHtmlHandler(req: Request, res: Response) {
         summary,
         sections,
         displayName,
-        sameAsLinks
+        sameAsLinks,
+        footerText
       })
     )
   } catch (error) {
