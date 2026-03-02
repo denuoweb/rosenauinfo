@@ -95,40 +95,9 @@ pre, code {
 }
 .home-hero {
   position: relative;
+  gap: clamp(0.8rem, 0.7rem + 0.6vw, 1.2rem);
   padding: clamp(1.8rem, 1.4rem + 2vw, 3rem);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--hero-gradient-start), var(--hero-gradient-end));
-  border: 1px solid var(--hero-gradient-ring);
-  box-shadow: var(--shadow-soft);
-  overflow: hidden;
   backdrop-filter: saturate(140%) var(--hero-blur);
-}
-.home-hero::before,
-.home-hero::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(0px);
-  opacity: .9;
-  pointer-events: none;
-}
-.home-hero::before {
-  width: 480px;
-  height: 480px;
-  top: -220px;
-  left: -180px;
-  background: radial-gradient(circle at center, var(--hero-gradient-glow) 0%, transparent 70%);
-}
-.home-hero::after {
-  width: 420px;
-  height: 420px;
-  bottom: -240px;
-  right: -160px;
-  background: radial-gradient(circle at center, var(--hero-gradient-glow-secondary) 0%, transparent 72%);
-}
-.home-hero > * {
-  position: relative;
-  z-index: 1;
 }
 .home-hero h1 {
   margin-top: 0;
@@ -265,7 +234,7 @@ pre, code {
   top:0;
   left:0;
 }
-.language-switcher { display:flex; border:1px solid var(--glass-border); border-radius:999px; overflow:hidden; background:rgba(255,255,255,0.45); }
+.language-switcher { display:flex; border:1px solid var(--glass-border); border-radius:999px; overflow:hidden; background:var(--glass-bg); }
 .language-switcher button {
   border:none;
   background:transparent;
@@ -294,7 +263,7 @@ pre, code {
   padding:.5rem .95rem;
   border-radius:999px;
   border:1px solid var(--glass-border);
-  background: rgba(255,255,255,0.6);
+  background: var(--glass-bg);
   text-decoration:none;
   color: var(--text-color);
   transition: background .2s ease, color .2s ease;
@@ -316,7 +285,7 @@ pre, code {
   border-radius:999px;
   border:1px solid var(--glass-border);
   text-decoration:none;
-  background:rgba(255,255,255,0.6);
+  background:var(--glass-bg);
   color:var(--text-color);
 }
 .resume-download a:hover {
@@ -478,7 +447,7 @@ pre, code {
   padding:.55rem 1rem;
   border-radius:999px;
   border:1px solid var(--glass-border);
-  background: rgba(255,255,255,0.55);
+  background: var(--glass-bg);
   color: var(--text-color);
   text-decoration:none;
   font-size: var(--font-size-sm);
@@ -516,7 +485,7 @@ select optgroup {
 textarea { resize: vertical; min-height: 6rem; }
 button {
   padding:.6rem .9rem; border:1px solid var(--glass-border); border-radius:10px;
-  cursor:pointer; background: rgba(255,255,255,0.35); color: var(--text-color);
+  cursor:pointer; background: var(--glass-bg); color: var(--text-color);
 }
 button:focus-visible {
   outline: 2px solid var(--accent-color);

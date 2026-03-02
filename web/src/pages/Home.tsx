@@ -79,7 +79,7 @@ const HomeSection = memo(function HomeSection({
   })
 
   return (
-    <section className="home-hero">
+    <section className="card home-hero">
       {greeting && <h1>{greeting}</h1>}
       <p className={blurb ? undefined : 'muted'}>{leadParagraph}</p>
       {links.length > 0 && (

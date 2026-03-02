@@ -89,9 +89,11 @@ function AboutContent({
 
   return (
     <article className="stack">
-      <h1>{displayName}</h1>
-      <p className="muted">{headline}</p>
-      <p>{intro}</p>
+      <section className="card">
+        <h1>{displayName}</h1>
+        <p className="muted">{headline}</p>
+        <p>{intro}</p>
+      </section>
 
       {highlights.length > 0 && (
         <section className="resume-section">

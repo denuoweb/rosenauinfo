@@ -128,25 +128,28 @@ function ResumeSection({
 
   return (
     <section className="resume-page">
-      <h1>{heading}</h1>
-      <p>{leadParagraph}</p>
-      {updatedCopy && <p className="muted resume-meta">{updatedCopy}</p>}
-      {url && (
-        <div className="resume-download">
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            {language === 'ja' ? '履歴書（PDF）をダウンロード' : 'Download résumé (PDF)'}
-          </a>
-        </div>
-      )}
+      <section className="card">
+        <h1>{heading}</h1>
+        <p>{leadParagraph}</p>
+        {updatedCopy && <p className="muted resume-meta">{updatedCopy}</p>}
+        {url && (
+          <div className="resume-download">
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              {language === 'ja' ? '履歴書（PDF）をダウンロード' : 'Download résumé (PDF)'}
+            </a>
+          </div>
+        )}
+        {summaryParagraphs.map((paragraph, idx) => (
+          <p key={`summary-${idx}`}>{paragraph}</p>
+        ))}
+        {etaCopy && (url || hasContent) && <p className="muted resume-meta">{etaCopy}</p>}
+      </section>
       {!hasContent && !url && (
         <div className="card neutral-stub">
           <p>{neutralCopy}</p>
           {etaCopy && <p className="muted">{etaCopy}</p>}
         </div>
       )}
-      {summaryParagraphs.map((paragraph, idx) => (
-        <p key={`summary-${idx}`}>{paragraph}</p>
-      ))}
       {localizedSections.length > 0 && (
         <div className="resume-sections">
           {localizedSections.map(section => (
@@ -163,7 +166,6 @@ function ResumeSection({
           ))}
         </div>
       )}
-      {etaCopy && (url || hasContent) && <p className="muted resume-meta">{etaCopy}</p>}
     </section>
   )
 }

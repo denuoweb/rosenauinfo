@@ -91,26 +91,31 @@ function ContactContent({
 
   return (
     <section className="stack">
-      <h1>{heading}</h1>
-      <p>{intro}</p>
-      {availability && <p className="muted">{availability}</p>}
+      <section className="card">
+        <h1>{heading}</h1>
+        <p>{intro}</p>
+        {availability && <p className="muted">{availability}</p>}
 
-      {site.contactEmail && (
-        <div className="resume-download">
-          <a href={`mailto:${site.contactEmail}`}>
-            {emailLabel}: {site.contactEmail}
-          </a>
-        </div>
-      )}
+        {site.contactEmail && (
+          <div className="resume-download">
+            <a href={`mailto:${site.contactEmail}`}>
+              {emailLabel}: {site.contactEmail}
+            </a>
+          </div>
+        )}
+      </section>
 
       {links.length > 0 && (
-        <div className="home-links" aria-label={language === 'ja' ? 'プロフィールリンク' : 'Profile links'}>
-          {links.map(link => (
-            <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noopener">
-              {link.label}
-            </a>
-          ))}
-        </div>
+        <section className="card">
+          <h2>{language === 'ja' ? 'プロフィールリンク' : 'Profile links'}</h2>
+          <div className="home-links" aria-label={language === 'ja' ? 'プロフィールリンク' : 'Profile links'}>
+            {links.map(link => (
+              <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noopener">
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </section>
       )}
     </section>
   )
