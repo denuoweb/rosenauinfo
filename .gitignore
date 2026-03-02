@@ -6,3 +6,4 @@ functions/lib
 web/.env
 .firebase/
 .github/
+firebase-debug.log
