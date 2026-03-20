@@ -77,7 +77,20 @@ type NormalizedSection = {
   items: string[]
 }
 
+type ResumeCard = {
+  title: string
+  body: string
+}
+
 const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
+
+function localizedText(language: 'en' | 'ja', en: string, ja: string) {
+  return language === 'ja' ? ja : en
+}
+
+function dedupeStrings(values: string[]) {
+  return Array.from(new Set(values.map(value => value.trim()).filter(Boolean)))
+}
 
 function normalizeLanguage(req: Request): 'en' | 'ja' {
   const queryLang = Array.isArray(req.query.lang) ? req.query.lang[0] : req.query.lang
@@ -253,6 +266,189 @@ function normalizeSections(doc: ResumeRecord | null, language: 'en' | 'ja'): Nor
     .filter(section => section.title || section.items.length > 0)
 }
 
+function legacySummaryParagraphs(doc: ResumeRecord | null, language: 'en' | 'ja') {
+  if (!doc) return []
+
+  const localized = language === 'ja'
+    ? toParagraphs(doc.summary_ja ?? doc.summary)
+    : toParagraphs(doc.summary_en ?? doc.summary)
+
+  if (localized.length > 0) return localized
+
+  return language === 'ja'
+    ? toParagraphs(doc.summary_en ?? doc.summary)
+    : toParagraphs(doc.summary_ja ?? doc.summary)
+}
+
+function buildExecutiveSummary(doc: ResumeRecord | null, language: 'en' | 'ja', displayName: string): string[] {
+  const fallbackPrimary = localizedText(
+    language,
+    `${displayName} is a Backend / Platform Engineer shipping data-rich web products end-to-end.`,
+    `${displayName} は、データ量の多い Web プロダクトを要件定義から運用まで一気通貫で届ける Backend / Platform Engineer です。`
+  )
+  const fallbackSecondary = localizedText(
+    language,
+    'I build and operate Python/TypeScript systems across APIs, data workflows, CI/CD, cloud infrastructure, Linux environments, and user-facing web products, with geospatial, civic, and research-adjacent systems as a secondary specialty.',
+    'Python / TypeScript を軸に、API、データ処理、CI/CD、クラウド基盤、Linux 環境、ユーザー向け Web プロダクトを構築・運用しています。地理空間、公共性の高い領域、研究周辺システムは副次的な専門領域です。'
+  )
+  const docParagraphs = legacySummaryParagraphs(doc, language)
+  const secondParagraph = docParagraphs[0] || fallbackSecondary
+  const thirdParagraph = docParagraphs[1]
+
+  return dedupeStrings([fallbackPrimary, secondParagraph, ...(thirdParagraph ? [thirdParagraph] : [])]).slice(0, 3)
+}
+
+function buildHeroCards(language: 'en' | 'ja'): ResumeCard[] {
+  return [
+    {
+      title: localizedText(language, 'Core role', '中核の役割'),
+      body: localizedText(
+        language,
+        'Backend / platform engineering with end-to-end ownership from requirements through deployment and iteration.',
+        '要件定義からデプロイ、継続改善までを担う Backend / Platform Engineering。'
+      )
+    },
+    {
+      title: localizedText(language, 'Stack', '技術スタック'),
+      body: localizedText(
+        language,
+        'Python, TypeScript, APIs, data systems, CI/CD, cloud infrastructure, and Linux operations.',
+        'Python、TypeScript、API、データシステム、CI/CD、クラウド基盤、Linux 運用。'
+      )
+    },
+    {
+      title: localizedText(language, 'Shipped systems', '実績あるシステム'),
+      body: localizedText(
+        language,
+        'Production web products, secure ingest pipelines, background jobs, observability, and packaged developer tooling.',
+        '本番 Web プロダクト、セキュアな ingest パイプライン、バックグラウンドジョブ、可観測性、配布可能な開発ツール。'
+      )
+    },
+    {
+      title: localizedText(language, 'Secondary focus', '副次的な専門領域'),
+      body: localizedText(
+        language,
+        'Geospatial, civic, and research-adjacent systems that still need strong backend and platform discipline.',
+        '地理空間、公共性の高い領域、研究周辺システムなど、バックエンドと基盤設計が重要な案件。'
+      )
+    }
+  ]
+}
+
+function buildCuratedSections(language: 'en' | 'ja'): NormalizedSection[] {
+  return [
+    {
+      id: 'what-i-do',
+      title: localizedText(language, 'What I do', '何をしているか'),
+      items: [
+        localizedText(
+          language,
+          'Build and operate backend and platform systems in Python and TypeScript, including APIs, data workflows, CI/CD, cloud infrastructure, and user-facing web products.',
+          'Python / TypeScript で backend と platform を構築・運用し、API、データ処理、CI/CD、クラウド基盤、ユーザー向け Web プロダクトまで担当します。'
+        ),
+        localizedText(
+          language,
+          'Own delivery end-to-end: requirements, implementation, release, monitoring, and iteration after launch.',
+          '要件定義、実装、リリース、監視、公開後の改善までを一気通貫で担当します。'
+        )
+      ]
+    },
+    {
+      id: 'what-ive-shipped',
+      title: localizedText(language, 'What I’ve shipped', 'これまでに出したもの'),
+      items: [
+        localizedText(
+          language,
+          'QuestByCycle: a Flask/PostgreSQL product with background jobs, production provisioning, and a live public deployment.',
+          'QuestByCycle: Flask / PostgreSQL、バックグラウンドジョブ、本番プロビジョニングを備えた公開運用中のプロダクト。'
+        ),
+        localizedText(
+          language,
+          'CrowdPM Platform: a secure PM2.5 ingest and visualization stack with Fastify APIs, Cloud Functions, Firestore buckets, and WebGL maps.',
+          'CrowdPM Platform: Fastify API、Cloud Functions、Firestore の bucket 管理、WebGL 地図表示を備えた PM2.5 ingest / 可視化基盤。'
+        ),
+        localizedText(
+          language,
+          'ARM64-ADK and DripCopy: developer tooling and resilient Linux utilities that solve real operational problems.',
+          'ARM64-ADK と DripCopy: 実運用上の問題を解く開発者向けツールと堅牢な Linux ユーティリティ。'
+        )
+      ]
+    },
+    {
+      id: 'what-i-work-well-on',
+      title: localizedText(language, 'What I work well on', '得意なこと'),
+      items: [
+        localizedText(
+          language,
+          'Turning unclear requirements into shippable scope and keeping the implementation aligned with the product surface.',
+          '曖昧な要求を出荷可能なスコープに落とし込み、実装をプロダクト面と揃えます。'
+        ),
+        localizedText(
+          language,
+          'Systems integration across APIs, auth, data modeling, background processing, and deployment pipelines.',
+          'API、認証、データモデリング、バックグラウンド処理、デプロイパイプラインの統合に強みがあります。'
+        ),
+        localizedText(
+          language,
+          'Linux and cloud operations, especially when the system has to stay usable after launch.',
+          '公開後も使い続けられることが重要な Linux / cloud 運用。'
+        )
+      ]
+    },
+    {
+      id: 'secondary-specialization',
+      title: localizedText(language, 'Secondary specialization', '副次的な専門領域'),
+      items: [
+        localizedText(
+          language,
+          'Geospatial, civic, and research-adjacent systems where data quality, delivery discipline, and operational reliability matter.',
+          '地理空間、公共性の高い領域、研究周辺のシステムで、データ品質・デリバリー・運用安定性が重要な案件。'
+        ),
+        localizedText(
+          language,
+          'These are support areas for the main story: backend/platform engineering with shipped products.',
+          'これらは主軸ではなく、backend/platform engineering で成果物を出すための副次的な強みです。'
+        )
+      ]
+    }
+  ]
+}
+
+function buildShippedSystemsSection(language: 'en' | 'ja'): NormalizedSection {
+  return {
+    id: 'selected-systems',
+    title: localizedText(language, 'Selected systems', '選定システム'),
+    items: [
+      localizedText(
+        language,
+        'QuestByCycle: Flask, PostgreSQL, SQLAlchemy, Redis, RQ, Gunicorn, and NGINX around a live bicycling product.',
+        'QuestByCycle: Flask、PostgreSQL、SQLAlchemy、Redis、RQ、Gunicorn、NGINX を中心にした公開サイクリングプロダクト。'
+      ),
+      localizedText(
+        language,
+        'CrowdPM Platform: DPoP-bound ingest, calibration, Fastify APIs, Cloud Storage, Firestore, deck.gl, and Google Maps WebGL.',
+        'CrowdPM Platform: DPoP 付き ingest、補正処理、Fastify API、Cloud Storage、Firestore、deck.gl、Google Maps WebGL。'
+      ),
+      localizedText(
+        language,
+        'ARM64-ADK: a Rust/gRPC Linux ARM64 platform with GTK UI, CLI, workflow services, and packaged releases.',
+        'ARM64-ADK: GTK UI、CLI、workflow サービス、配布物を備えた Rust / gRPC の Linux ARM64 プラットフォーム。'
+      ),
+      localizedText(
+        language,
+        'DripCopy: a Bash utility for resilient optical-media copying on unstable low-power USB hosts.',
+        'DripCopy: 低電力で不安定な USB ホスト向けの、堅牢な光学メディア複製 Bash ユーティリティ。'
+      )
+    ]
+  }
+}
+
+function buildResumeSections(language: 'en' | 'ja', doc: ResumeRecord | null): NormalizedSection[] {
+  const curated = [...buildCuratedSections(language), buildShippedSystemsSection(language)]
+  const legacy = normalizeSections(doc, language)
+  return [...curated, ...legacy]
+}
+
 async function loadResumeDoc(): Promise<ResumeRecord | null> {
   const snapshot = await getFirestore().collection('public').doc('resume').get()
   if (!snapshot.exists) {
@@ -315,26 +511,39 @@ function resumeHtml({
         relatedProfiles: 'Related profiles',
         summary: 'Summary'
       }
-  const title = language === 'ja' ? '履歴書' : 'Resume'
-  const subtitle = language === 'ja'
-    ? '職務経歴・スキル・実績'
-    : 'Experience, skills, and impact'
-  const description = language === 'ja'
-    ? `${displayName}の履歴書ページです。`
-    : `${displayName}'s resume page.`
-  const downloadLabel = language === 'ja' ? '履歴書PDFを開く' : 'Open resume PDF'
-  const neutral = language === 'ja'
-    ? '履歴書データは現在準備中です。'
-    : 'Resume data is currently being prepared.'
+  const title = localizedText(language, 'Resume | Backend / Platform Engineer', '履歴書 | Backend / Platform Engineer')
+  const subtitle = localizedText(
+    language,
+    'Backend / Platform Engineer shipping data-rich web products end-to-end.',
+    'データ量の多い Web プロダクトを一気通貫で届ける Backend / Platform Engineer。'
+  )
+  const description = localizedText(
+    language,
+    `${displayName} is a Backend / Platform Engineer shipping Python/TypeScript systems across APIs, data workflows, CI/CD, cloud infrastructure, Linux operations, and product delivery.`,
+    `${displayName} は、Python / TypeScript を軸に、API、データ処理、CI/CD、クラウド基盤、Linux 運用、プロダクトデリバリーまで担う Backend / Platform Engineer です。`
+  )
+  const downloadLabel = localizedText(language, 'Open résumé PDF', '履歴書 PDF を開く')
+  const neutral = localizedText(
+    language,
+    'This page is designed to stay useful even before the PDF opens.',
+    'このページは、PDF を開く前から役に立つ構成にしています。'
+  )
   const updatedLabel = language === 'ja' ? '最終更新' : 'Updated'
   const etaLabel = language === 'ja' ? '公開予定日' : 'Target publish date'
-  const leadText = language === 'ja'
-    ? `${displayName}の職務経歴、スキル、実績をまとめたページです。`
-    : `This page covers ${displayName}'s experience, skills, and measurable project impact.`
-  const hasContent = summary.length > 0 || sections.length > 0
+  const leadText = localizedText(
+    language,
+    `${displayName} is strongest when the work spans APIs, data systems, shipping discipline, and the operational details needed to keep a product running.`,
+    `${displayName} は、API、データシステム、出荷の規律、そして運用面まで含めてプロダクトを前に進める仕事を得意としています。`
+  )
   const pdfLink = `/resume.pdf${language === 'ja' ? '?lang=ja' : ''}`
   const englishPath = '/resume?lang=en'
   const japanesePath = '/resume?lang=ja'
+  const sectionLinks = [
+    { href: '#summary', label: nav.summary },
+    { href: '#experience', label: localizedText(language, 'Experience', '経験') },
+    { href: '#selected-systems', label: localizedText(language, 'Systems', 'システム') },
+    ...(sameAsLinks.length > 0 ? [{ href: '#profiles', label: nav.relatedProfiles }] : [])
+  ]
   const navigationHtml = [
     { href: '/', label: nav.home },
     { href: '/about', label: nav.about },
@@ -345,17 +554,13 @@ function resumeHtml({
     .map(item => `<a href="${escapeHtml(item.href)}"${item.href === '/resume' ? ' aria-current="page"' : ''}>${escapeHtml(item.label)}</a>`)
     .join('')
 
-  const summaryHtml = summary
-    .map(paragraph => `<p>${escapeHtml(paragraph)}</p>`)
-    .join('')
-
   const sectionsHtml = sections
     .map(section => {
       const heading = section.title ? `<h2>${escapeHtml(section.title)}</h2>` : ''
       const items = section.items.length
         ? `<ul>${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
         : ''
-      return `<section class="content-card" id="${escapeHtml(section.id)}">${heading}${items}</section>`
+      return `<article class="content-card" id="${escapeHtml(section.id)}">${heading}${items}</article>`
     })
     .join('')
 
@@ -374,6 +579,20 @@ function resumeHtml({
     mainEntity: {
       '@type': 'Person',
       name: displayName,
+      jobTitle: localizedText(language, 'Backend / Platform Engineer', 'Backend / Platform Engineer'),
+      description,
+      knowsAbout: [
+        'Python',
+        'TypeScript',
+        'APIs',
+        'data systems',
+        'CI/CD',
+        'Linux',
+        'cloud operations',
+        'geospatial systems',
+        'civic technology',
+        'research-adjacent systems'
+      ],
       ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks.map(link => link.url) } : {})
     }
   })
@@ -476,33 +695,69 @@ function resumeHtml({
         color: var(--accent);
       }
       .main {
-        width: min(100%, 980px);
+        width: min(100%, 1120px);
         margin: 0 auto;
         padding: 2rem 1.25rem 3rem;
       }
       .hero {
-        padding: clamp(1.5rem, 1.2rem + 1.6vw, 2.4rem);
-        border-radius: 18px;
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(236, 72, 153, 0.14));
+        padding: clamp(1.5rem, 1.2rem + 1.8vw, 2.6rem);
+        border-radius: 22px;
+        background:
+          linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(34, 211, 238, 0.08)),
+          rgba(255, 255, 255, 0.72);
         border: 1px solid rgba(14, 165, 233, 0.2);
-        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08);
+        display: grid;
+        gap: 0.95rem;
       }
       .topline {
         display: flex;
         justify-content: space-between;
-        gap: 0.75rem;
-        align-items: baseline;
+        gap: 1rem;
+        align-items: flex-start;
         flex-wrap: wrap;
+      }
+      .hero-copy {
+        display: grid;
+        gap: 0.2rem;
+        max-width: 780px;
+      }
+      .eyebrow {
+        margin: 0;
+        color: var(--accent);
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
       h1 {
         margin: 0;
-        font-size: clamp(1.8rem, 1.5rem + 0.9vw, 2.4rem);
+        font-size: clamp(2rem, 1.7rem + 1vw, 2.9rem);
         letter-spacing: -0.02em;
+        line-height: 1.08;
       }
-      .subtitle {
-        margin: 0.25rem 0 1rem;
-        color: #475569;
-        font-size: 1rem;
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        padding: 0.48rem 0.9rem;
+        color: #0f172a;
+        background: rgba(255, 255, 255, 0.72);
+        text-decoration: none;
+        font-size: 0.92rem;
+      }
+      .lead {
+        margin: 0;
+        color: #0f172a;
+        font-size: clamp(1rem, 0.94rem + 0.3vw, 1.14rem);
+        max-width: 70ch;
+      }
+      .supporting-copy {
+        margin: 0;
+        color: #334155;
+        max-width: 76ch;
       }
       .meta-block {
         display: grid;
@@ -518,7 +773,7 @@ function resumeHtml({
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
-        margin: 1.25rem 0 0;
+        margin: 0.35rem 0 0;
       }
       .links a {
         display: inline-flex;
@@ -538,21 +793,55 @@ function resumeHtml({
         border-color: rgba(14, 165, 233, 0.28);
         color: var(--accent);
       }
+      .anchor-links {
+        margin-top: 0.85rem;
+      }
+      .proof-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin-top: 1.15rem;
+      }
+      .proof-card {
+        border: 1px solid var(--card-border);
+        border-radius: 18px;
+        background: var(--card-bg);
+        box-shadow: var(--glass-shadow);
+        padding: 1rem 1.1rem;
+        display: grid;
+        gap: 0.55rem;
+      }
+      .proof-card h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+      .proof-card p {
+        margin: 0;
+        color: #334155;
+        font-size: 0.95rem;
+      }
       .content {
         display: grid;
         gap: 1rem;
-        margin-top: 1.5rem;
+        margin-top: 1.25rem;
       }
       .content-card,
       .empty {
         border: 1px solid var(--card-border);
-        border-radius: 14px;
+        border-radius: 18px;
         background: var(--card-bg);
         box-shadow: var(--glass-shadow);
         padding: 1rem 1.15rem;
       }
+      .content-card {
+        display: grid;
+        gap: 0.45rem;
+      }
       .content-card p:first-child,
       .empty p:first-child { margin-top: 0; }
+      .content-card h2 {
+        margin: 0;
+      }
       section { margin: 0; }
       h2 {
         font-size: 1.15rem;
@@ -586,6 +875,15 @@ function resumeHtml({
         .navmenu {
           justify-content: center;
         }
+        .topline {
+          align-items: stretch;
+        }
+        .back-link {
+          width: fit-content;
+        }
+        .proof-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
     <script type="application/ld+json">${structuredData}</script>
@@ -601,23 +899,46 @@ function resumeHtml({
         </div>
       </header>
       <main class="main">
-        <section class="hero">
+        <section class="hero" aria-labelledby="resume-title">
           <div class="topline">
-            <h1>${escapeHtml(title)}</h1>
-            <a href="${escapeHtml(baseUrl)}">${escapeHtml(nav.back)}</a>
+            <div class="hero-copy">
+              <p class="eyebrow">${escapeHtml(subtitle)}</p>
+              <h1 id="resume-title">${escapeHtml(`${displayName} | ${localizedText(language, 'Backend / Platform Engineer', 'Backend / Platform Engineer')}`)}</h1>
+            </div>
+            <a class="back-link" href="${escapeHtml(baseUrl)}">${escapeHtml(nav.back)}</a>
           </div>
-          <p class="subtitle">${escapeHtml(subtitle)}</p>
-          <p>${escapeHtml(leadText)}</p>
+          <p class="lead">${escapeHtml(leadText)}</p>
+          <p class="supporting-copy">${escapeHtml(localizedText(
+            language,
+            'I own the path from product intent to production systems, with geospatial, civic, and research-adjacent work as supporting context rather than the headline.',
+            'プロダクトの意図から本番運用までを一気通貫で担い、地理空間・公共性の高い領域・研究周辺の仕事は主軸を支える副次的な文脈として扱っています。'
+          ))}</p>
           ${metadataHtml ? `<div class="meta-block">${metadataHtml}</div>` : ''}
           <nav class="links" aria-label="${escapeHtml(nav.displayLanguage)}">
             <a href="${escapeHtml(englishPath)}" hreflang="en">English</a>
             <a href="${escapeHtml(japanesePath)}" hreflang="ja">日本語</a>
             ${pdfUrl ? `<a href="${escapeHtml(pdfLink)}">${escapeHtml(downloadLabel)}</a>` : ''}
           </nav>
-          ${sameAsLinks.length > 0 ? `<nav class="links" aria-label="${escapeHtml(nav.relatedProfiles)}">${sameAsLinks.map(link => `<a href="${escapeHtml(link.url)}" rel="noopener">${escapeHtml(link.label)}</a>`).join('')}</nav>` : ''}
+          <nav class="links anchor-links" aria-label="${escapeHtml(localizedText(language, 'Resume sections', '履歴書セクション'))}">
+            ${sectionLinks.map(link => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}
+          </nav>
+          ${sameAsLinks.length > 0 ? `<nav class="links" id="profiles" aria-label="${escapeHtml(nav.relatedProfiles)}">${sameAsLinks.map(link => `<a href="${escapeHtml(link.url)}" rel="noopener">${escapeHtml(link.label)}</a>`).join('')}</nav>` : ''}
         </section>
-        <section class="content" aria-label="${escapeHtml(nav.summary)}">
-          ${hasContent ? `${summary.map(paragraph => `<article class="content-card"><p>${escapeHtml(paragraph)}</p></article>`).join('')}${sectionsHtml}` : `<div class="empty"><p>${escapeHtml(neutral)}</p></div>`}
+        <section class="proof-grid" aria-label="${escapeHtml(localizedText(language, 'Executive summary', '要約'))}">
+          ${buildHeroCards(language).map(card => `
+            <article class="proof-card">
+              <h2>${escapeHtml(card.title)}</h2>
+              <p>${escapeHtml(card.body)}</p>
+            </article>
+          `).join('')}
+        </section>
+        <section class="content" id="summary" aria-label="${escapeHtml(nav.summary)}">
+          ${summary.length > 0
+            ? summary.map(paragraph => `<article class="content-card"><p>${escapeHtml(paragraph)}</p></article>`).join('')
+            : `<div class="empty"><p>${escapeHtml(neutral)}</p></div>`}
+        </section>
+        <section class="content" id="experience" aria-label="${escapeHtml(localizedText(language, 'Experience and systems', '経験とシステム'))}">
+          ${sectionsHtml}
         </section>
       </main>
       <footer class="footer">
@@ -636,11 +957,11 @@ export async function resumeHtmlHandler(req: Request, res: Response) {
     const [doc, site] = await Promise.all([loadResumeDoc(), loadSiteDoc()])
     const baseUrl = resolveSiteUrl(req)
     const pdfUrl = preferredResumeUrl(doc, language)
-    const summary = summaryParagraphs(doc, language)
-    const sections = normalizeSections(doc, language)
+    const displayName = personName(site, language)
+    const summary = buildExecutiveSummary(doc, language, displayName)
+    const sections = buildResumeSections(language, doc)
     const updatedAt = pick(doc?.updatedAt ?? doc?.updated_at)
     const eta = pick(doc?.ja_eta ?? doc?.eta_ja ?? doc?.jaTargetDate)
-    const displayName = personName(site, language)
     const sameAsLinks = profileLinks(site)
     const footerText = footerCopy(site, language)
 
