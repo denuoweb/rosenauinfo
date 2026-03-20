@@ -1,17 +1,19 @@
 import { useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
-import { getPublicDoc } from '../lib/content'
+import { getPublicDoc, type LocalizedText } from '../lib/content'
+import {
+  CORE_ROLE_HEADLINE,
+  RESUME_DEFAULTS,
+  SECONDARY_SPECIALIZATION,
+  localizedValue
+} from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { useSeo } from '../lib/seo'
 import type { AppShellContext } from '../components/Layout'
 
-type ResumeLoaderData = {
-  resume: Promise<ResumeCopy>
-}
-
 type ResumeSectionEntry = {
   id: string
-  title: { en: string; ja: string }
+  title: LocalizedText
   items: { en: string[]; ja: string[] }
 }
 
@@ -22,6 +24,10 @@ type ResumeCopy = {
   jaEta?: string
   summary: { en: string[]; ja: string[] }
   sections: ResumeSectionEntry[]
+}
+
+type ResumeLoaderData = {
+  resume: Promise<ResumeCopy>
 }
 
 export function loader() {
@@ -39,14 +45,6 @@ export function Component() {
   const data = useLoaderData() as ResumeLoaderData
   const { site } = useOutletContext<AppShellContext>()
   const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
-
-  useSeo({
-    title: `${displayName} | ${language === 'ja' ? '履歴書' : 'Resume'}`,
-    description: language === 'ja'
-      ? `${displayName}の履歴書ページです。`
-      : `${displayName}'s resume, experience, and skills.`,
-    path: '/resume'
-  })
 
   return (
     <Suspense fallback={<ResumeSkeleton />}>
@@ -67,106 +65,81 @@ function ResumeContent({
   displayName: string
 }) {
   const resume = use(promise)
-  return <ResumeSection language={language} resume={resume} displayName={displayName} />
-}
-
-function ResumeSection({
-  language,
-  resume,
-  displayName
-}: {
-  language: 'en' | 'ja'
-  resume: ResumeCopy
-  displayName: string
-}) {
-  const heading = language === 'ja' ? '履歴書' : 'Resume'
-  const leadParagraph = language === 'ja'
-    ? `${displayName}の職務経歴、スキル、実績をまとめたページです。`
-    : `This page summarizes ${displayName}'s experience, skills, and project impact.`
   const url = language === 'ja' ? resume.jaUrl ?? resume.enUrl : resume.enUrl ?? resume.jaUrl
-  const neutralCopy = language === 'ja'
-    ? '履歴書は現在準備中です。近日中に公開いたします。'
-    : 'The résumé is being finalised and will be available soon.'
-
-  const summaryParagraphs = language === 'ja'
+  const defaultSummary = language === 'ja' ? RESUME_DEFAULTS.summary.ja : RESUME_DEFAULTS.summary.en
+  const legacySummary = language === 'ja'
     ? (resume.summary.ja.length ? resume.summary.ja : resume.summary.en)
     : (resume.summary.en.length ? resume.summary.en : resume.summary.ja)
-  const localizedSections = resume.sections
-    .map(section => {
-      const title = language === 'ja'
-        ? section.title.ja || section.title.en
-        : section.title.en || section.title.ja
-      const items = language === 'ja'
-        ? (section.items.ja.length ? section.items.ja : section.items.en)
-        : (section.items.en.length ? section.items.en : section.items.ja)
-      return {
-        id: section.id,
-        title,
-        items
-      }
-    })
-    .filter(section => section.title || section.items.length)
-
-  const etaCopy = language === 'ja'
-    ? resume.jaEta ? `公開予定日: ${resume.jaEta}` : null
-    : resume.jaEta ? `Target publish date: ${resume.jaEta}` : null
+  const summaryParagraphs = dedupeStrings([
+    ...defaultSummary,
+    ...legacySummary.filter(paragraph => !isOffBrandParagraph(paragraph))
+  ]).slice(0, 3)
+  const sections = buildResumeSections(language, resume.sections)
   const updatedCopy = resume.updatedAt
     ? (language === 'ja' ? `最終更新: ${resume.updatedAt}` : `Updated: ${resume.updatedAt}`)
     : null
-  const hasContent = summaryParagraphs.length > 0 || localizedSections.some(section => section.items.length > 0 || section.title)
-  const seoDescription = summaryParagraphs[0]
-    ? `${displayName} — ${summaryParagraphs[0]}`
-    : (language === 'ja'
-        ? `${displayName}の履歴書ページです。`
-        : `${displayName}'s resume and work history.`)
+  const etaCopy = language === 'ja'
+    ? (resume.jaEta ? `公開予定日: ${resume.jaEta}` : null)
+    : (resume.jaEta ? `Target publish date: ${resume.jaEta}` : null)
+  const description = `${localizedValue(CORE_ROLE_HEADLINE, language)} ${summaryParagraphs[1] || ''}`.trim()
 
   useSeo({
-    title: `${displayName} | ${heading}`,
-    description: seoDescription,
+    title: `${displayName} | ${language === 'ja' ? '履歴書' : 'Resume'}`,
+    description,
     path: '/resume'
   })
 
   return (
-    <section className="resume-page">
-      <section className="card">
-        <h1>{heading}</h1>
-        <p>{leadParagraph}</p>
-        {updatedCopy && <p className="muted resume-meta">{updatedCopy}</p>}
-        {url && (
-          <div className="resume-download">
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              {language === 'ja' ? '履歴書（PDF）をダウンロード' : 'Download résumé (PDF)'}
-            </a>
-          </div>
-        )}
-        {summaryParagraphs.map((paragraph, idx) => (
-          <p key={`summary-${idx}`}>{paragraph}</p>
-        ))}
-        {etaCopy && (url || hasContent) && <p className="muted resume-meta">{etaCopy}</p>}
-      </section>
-      {!hasContent && !url && (
-        <div className="card neutral-stub">
-          <p>{neutralCopy}</p>
-          {etaCopy && <p className="muted">{etaCopy}</p>}
-        </div>
-      )}
-      {localizedSections.length > 0 && (
-        <div className="resume-sections">
-          {localizedSections.map(section => (
-            <article key={section.id} className="resume-section">
-              {section.title && <h2>{section.title}</h2>}
-              {section.items.length > 0 && (
-                <ul>
-                  {section.items.map((item, index) => (
-                    <li key={`${section.id}-${index}`}>{item}</li>
-                  ))}
-                </ul>
-              )}
+    <article className="resume-page">
+      <section className="card resume-hero-card">
+        <p className="eyebrow">{language === 'ja' ? '履歴書' : 'Resume'}</p>
+        <h1>{localizedValue(CORE_ROLE_HEADLINE, language)}</h1>
+        <p className="lead-text">{summaryParagraphs[1] || summaryParagraphs[0]}</p>
+        <div className="resume-highlight-grid">
+          {buildResumeHighlights(language).map(card => (
+            <article key={card.title} className="mini-card">
+              <h2>{card.title}</h2>
+              <p>{card.body}</p>
             </article>
           ))}
         </div>
-      )}
-    </section>
+        <div className="resume-download-row">
+          {url && (
+            <div className="resume-download">
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                {language === 'ja' ? '履歴書 PDF を開く' : 'Open resume PDF'}
+              </a>
+            </div>
+          )}
+          {updatedCopy && <p className="muted resume-meta">{updatedCopy}</p>}
+          {etaCopy && <p className="muted resume-meta">{etaCopy}</p>}
+        </div>
+        {summaryParagraphs.map((paragraph, index) => (
+          <p key={`summary-${index}`}>{paragraph}</p>
+        ))}
+      </section>
+
+      <div className="resume-sections">
+        {sections.map(section => (
+          <section key={section.id} className="resume-section">
+            <h2>{localizedValue(section.title, language)}</h2>
+            <ul>
+              {(language === 'ja'
+                ? (section.items.ja.length ? section.items.ja : section.items.en)
+                : (section.items.en.length ? section.items.en : section.items.ja)
+              ).map((item, index) => (
+                <li key={`${section.id}-${index}`}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+
+      <section className="resume-section">
+        <h2>{language === 'ja' ? '副次的な専門領域' : 'Secondary specialization'}</h2>
+        <p>{localizedValue(SECONDARY_SPECIALIZATION, language)}</p>
+      </section>
+    </article>
   )
 }
 
@@ -214,6 +187,51 @@ async function loadResumeCopy(): Promise<ResumeCopy> {
         })
       : []
   }
+}
+
+function buildResumeSections(language: 'en' | 'ja', sections: ResumeSectionEntry[]) {
+  const defaultSections = RESUME_DEFAULTS.sections
+  return [
+    ...defaultSections,
+    ...sections.filter(section => {
+      const title = localizedValue(section.title, language)
+      const items = language === 'ja'
+        ? (section.items.ja.length ? section.items.ja : section.items.en)
+        : (section.items.en.length ? section.items.en : section.items.ja)
+      return Boolean(title || items.length)
+    })
+  ]
+}
+
+function buildResumeHighlights(language: 'en' | 'ja') {
+  return [
+    {
+      title: language === 'ja' ? '主軸' : 'Primary focus',
+      body: language === 'ja'
+        ? 'Backend / platform engineering と出荷済みプロダクトの運用責任。'
+        : 'Backend/platform engineering with ownership after launch.'
+    },
+    {
+      title: language === 'ja' ? '主要技術' : 'Core stack',
+      body: language === 'ja'
+        ? 'Python、TypeScript、API、データシステム、CI/CD、Linux、クラウド。'
+        : 'Python, TypeScript, APIs, data systems, CI/CD, Linux, and cloud infrastructure.'
+    },
+    {
+      title: language === 'ja' ? '実績タイプ' : 'Shipped systems',
+      body: language === 'ja'
+        ? '公開 Web プロダクト、データパイプライン、開発者向けツール。'
+        : 'Live web products, data pipelines, and developer tooling.'
+    }
+  ]
+}
+
+function dedupeStrings(values: string[]) {
+  return Array.from(new Set(values.map(value => value.trim()).filter(Boolean)))
+}
+
+function isOffBrandParagraph(value: string) {
+  return /student|graduat|undergraduate|大学|在学|卒業予定/i.test(value)
 }
 
 function ResumeSkeleton() {

@@ -1,19 +1,33 @@
 import { useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
-import { getPublicDoc } from '../lib/content'
+import { getPublicDoc, type LocalizedText } from '../lib/content'
+import {
+  ABOUT_DEFAULTS,
+  CORE_ROLE_HEADLINE,
+  CORE_SUPPORTING_COPY,
+  DEFAULT_PROFILE_LINKS,
+  SECONDARY_SPECIALIZATION,
+  localizedValue
+} from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { absoluteSiteUrl, useSeo } from '../lib/seo'
 import type { AppShellContext, ProfileLink } from '../components/Layout'
 
-type AboutLoaderData = {
-  about: Promise<AboutCopy>
+type AboutSectionCopy = {
+  id: string
+  title: LocalizedText
+  items: { en: string[]; ja: string[] }
 }
 
 type AboutCopy = {
-  headline: { en: string; ja: string }
-  intro: { en: string; ja: string }
-  highlights: { en: string[]; ja: string[] }
+  headline: LocalizedText
+  intro: LocalizedText
+  sections: AboutSectionCopy[]
   links: ProfileLink[]
+}
+
+type AboutLoaderData = {
+  about: Promise<AboutCopy>
 }
 
 export function loader() {
@@ -33,7 +47,7 @@ export function Component() {
 
   return (
     <Suspense fallback={<AboutSkeleton />}>
-      <AboutContent aboutPromise={data.about} language={language} site={site} />
+      <AboutContent promise={data.about} language={language} site={site} />
     </Suspense>
   )
 }
@@ -41,77 +55,78 @@ export function Component() {
 export default Component
 
 function AboutContent({
-  aboutPromise,
+  promise,
   language,
   site
 }: {
-  aboutPromise: Promise<AboutCopy>
+  promise: Promise<AboutCopy>
   language: 'en' | 'ja'
   site: AppShellContext['site']
 }) {
-  const about = use(aboutPromise)
+  const about = use(promise)
   const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
-  const defaultHeadline = language === 'ja' ? 'ソフトウェアエンジニア' : 'Software Engineer'
-  const headline = language === 'ja'
-    ? (about.headline.ja || about.headline.en || defaultHeadline)
-    : (about.headline.en || about.headline.ja || defaultHeadline)
-  const rawIntro = language === 'ja'
-    ? (about.intro.ja || about.intro.en)
-    : (about.intro.en || about.intro.ja)
-  const intro = ensureNameMention(rawIntro, displayName, language)
-  const highlights = language === 'ja'
-    ? (about.highlights.ja.length ? about.highlights.ja : about.highlights.en)
-    : (about.highlights.en.length ? about.highlights.en : about.highlights.ja)
-  const links = dedupeLinks([...site.profileLinks, ...about.links])
-  const canonicalPath = '/about'
-  const seoDescription = language === 'ja'
-    ? `${displayName}のプロフィールページ。${headline}。`
-    : `${displayName} profile: ${headline}.`
+  const headline = localizedValue(about.headline, language, localizedValue(CORE_ROLE_HEADLINE, language))
+  const intro = localizedValue(
+    about.intro,
+    language,
+    `${localizedValue(CORE_SUPPORTING_COPY, language)} ${localizedValue(SECONDARY_SPECIALIZATION, language)}`
+  )
+  const links = dedupeLinks([...site.profileLinks, ...about.links, ...DEFAULT_PROFILE_LINKS])
 
   useSeo({
     title: `${displayName} | ${language === 'ja' ? '紹介' : 'About'}`,
-    description: seoDescription,
-    path: canonicalPath,
+    description: `${headline} ${localizedValue(CORE_SUPPORTING_COPY, language)}`,
+    path: '/about',
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'ProfilePage',
-      url: absoluteSiteUrl(canonicalPath),
+      url: absoluteSiteUrl('/about'),
       mainEntity: {
         '@type': 'Person',
         name: displayName,
         url: absoluteSiteUrl('/'),
         jobTitle: headline,
-        ...(links.length > 0 ? { sameAs: links.map(link => link.url) } : {}),
-        ...(highlights.length > 0 ? { knowsAbout: highlights } : {})
+        description: intro,
+        sameAs: links.map(link => link.url)
       }
     }
   })
 
   return (
     <article className="stack">
-      <section className="card">
+      <section className="card page-intro">
+        <p className="eyebrow">{language === 'ja' ? '紹介' : 'About'}</p>
         <h1>{displayName}</h1>
-        <p className="muted">{headline}</p>
+        <p className="lead-text">{headline}</p>
         <p>{intro}</p>
       </section>
 
-      {highlights.length > 0 && (
-        <section className="resume-section">
-          <h2>{language === 'ja' ? '専門領域' : 'Focus Areas'}</h2>
-          <ul>
-            {highlights.map((item, idx) => (
-              <li key={`${item}-${idx}`}>{item}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <div className="section-grid">
+        {about.sections.map(section => {
+          const title = localizedValue(section.title, language)
+          const items = language === 'ja'
+            ? (section.items.ja.length ? section.items.ja : section.items.en)
+            : (section.items.en.length ? section.items.en : section.items.ja)
+
+          return (
+            <section key={section.id} className="resume-section about-section-card">
+              <h2>{title}</h2>
+              <ul>
+                {items.map((item, index) => (
+                  <li key={`${section.id}-${index}`}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          )
+        })}
+      </div>
 
       {links.length > 0 && (
         <section className="resume-section">
-          <h2>{language === 'ja' ? 'プロフィールリンク' : 'Profiles'}</h2>
+          <h2>{language === 'ja' ? 'プロフィール' : 'Profiles'}</h2>
           <div className="home-links">
             {links.map(link => (
-              <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noopener">
+              <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noopener noreferrer">
                 {link.label}
               </a>
             ))}
@@ -145,19 +160,57 @@ async function loadAboutCopy(): Promise<AboutCopy> {
       .filter((item): item is ProfileLink => Boolean(item))
   }
 
+  const sectionFromDoc = (
+    id: string,
+    title: LocalizedText,
+    itemsEn: string[],
+    itemsJa: string[]
+  ): AboutSectionCopy => ({
+    id,
+    title,
+    items: {
+      en: itemsEn,
+      ja: itemsJa
+    }
+  })
+
+  const defaults = ABOUT_DEFAULTS.sections
+
   return {
     headline: {
-      en: pick(doc?.headline_en ?? doc?.headline),
+      en: pick(doc?.headline_en),
       ja: pick(doc?.headline_ja)
     },
     intro: {
-      en: pick(doc?.intro_en ?? doc?.summary_en ?? doc?.intro ?? doc?.summary),
-      ja: pick(doc?.intro_ja ?? doc?.summary_ja ?? doc?.intro ?? doc?.summary)
+      en: pick(doc?.intro_en),
+      ja: pick(doc?.intro_ja)
     },
-    highlights: {
-      en: parseLines(doc?.highlights_en ?? doc?.highlights),
-      ja: parseLines(doc?.highlights_ja)
-    },
+    sections: [
+      sectionFromDoc(
+        defaults[0].id,
+        defaults[0].title,
+        parseLines(doc?.what_i_do_en),
+        parseLines(doc?.what_i_do_ja)
+      ),
+      sectionFromDoc(
+        defaults[1].id,
+        defaults[1].title,
+        parseLines(doc?.what_ive_shipped_en),
+        parseLines(doc?.what_ive_shipped_ja)
+      ),
+      sectionFromDoc(
+        defaults[2].id,
+        defaults[2].title,
+        parseLines(doc?.what_i_work_well_on_en),
+        parseLines(doc?.what_i_work_well_on_ja)
+      )
+    ].map((section, index) => ({
+      ...section,
+      items: {
+        en: section.items.en.length ? section.items.en : defaults[index].items.en,
+        ja: section.items.ja.length ? section.items.ja : defaults[index].items.ja
+      }
+    })),
     links: parseLinks(doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as)
   }
 }
@@ -185,31 +238,18 @@ function normalizeLinkEntry(entry: string, fallbackLabel: string): ProfileLink |
 function dedupeLinks(links: ProfileLink[]): ProfileLink[] {
   const deduped = new Map<string, ProfileLink>()
   links.forEach(link => {
-    if (!deduped.has(link.url)) {
+    if (link.url && !deduped.has(link.url)) {
       deduped.set(link.url, link)
     }
   })
   return Array.from(deduped.values())
 }
 
-function ensureNameMention(raw: string, name: string, language: 'en' | 'ja') {
-  const fallback = language === 'ja'
-    ? `${name}は、地図・データ・プロダクト開発に注力するソフトウェアエンジニアです。`
-    : `${name} is a software engineer focused on mapping, data-rich interfaces, and reliable product delivery.`
-  const intro = raw || fallback
-  if (!name) return intro
-  const lower = intro.toLowerCase()
-  if (lower.includes(name.toLowerCase())) {
-    return intro
-  }
-  return language === 'ja' ? `${name}は${intro}` : `${name} is ${intro}`
-}
-
 function AboutSkeleton() {
   return (
     <section className="route-skeleton">
-      <span className="skeleton-block skeleton-heading" />
       <span className="skeleton-block skeleton-subheading" />
+      <span className="skeleton-block skeleton-heading" />
       <span className="skeleton-block skeleton-paragraph" />
       <span className="skeleton-block skeleton-paragraph" />
     </section>

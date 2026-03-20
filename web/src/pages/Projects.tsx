@@ -1,20 +1,17 @@
 import { Link, useLoaderData, useOutletContext } from 'react-router-dom'
-import { Suspense, memo, useEffect, use } from 'react'
-import { listProjects } from '../lib/content'
+import { Suspense, use } from 'react'
+import { listProjects, type ProjectRecord } from '../lib/content'
+import {
+  CORE_ROLE_HEADLINE,
+  localizedValue,
+  prioritizeProjects,
+  projectNarrative,
+  selectPortfolioProjects
+} from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { trackOutboundProjectLink } from '../lib/analytics'
 import { useSeo } from '../lib/seo'
 import type { AppShellContext } from '../components/Layout'
-
-type ProjectRecord = {
-  id: string
-  title: { en: string; ja: string }
-  description: { en: string; ja: string }
-  url?: string
-  repo?: string
-  tags: { en: string[]; ja: string[] }
-  cover?: string
-}
 
 type ProjectsLoaderData = {
   projects: Promise<ProjectRecord[]>
@@ -22,7 +19,7 @@ type ProjectsLoaderData = {
 
 export function loader() {
   return {
-    projects: loadProjects()
+    projects: listProjects()
   }
 }
 
@@ -35,14 +32,6 @@ export function Component() {
   const data = useLoaderData() as ProjectsLoaderData
   const { site } = useOutletContext<AppShellContext>()
   const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
-
-  useSeo({
-    title: `${displayName} | ${language === 'ja' ? 'プロジェクト' : 'Projects'}`,
-    description: language === 'ja'
-      ? `${displayName}の主要プロジェクト一覧です。`
-      : `${displayName}'s project portfolio, including live demos and source repositories.`,
-    path: '/projects'
-  })
 
   return (
     <Suspense fallback={<ProjectsSkeleton />}>
@@ -63,132 +52,100 @@ function ProjectsContent({
   displayName: string
 }) {
   const projects = use(promise)
-  return <ProjectsSection projects={projects} language={language} displayName={displayName} />
-}
-
-const ProjectsSection = memo(function ProjectsSection({
-  projects,
-  language,
-  displayName
-}: {
-  projects: ProjectRecord[]
-  language: 'en' | 'ja'
-  displayName: string
-}) {
-  const heading = language === 'ja' ? 'プロジェクト' : 'Projects'
-  const neutralCopy = language === 'ja'
-    ? '公開できるプロジェクトは近日追加予定です。'
-    : 'Published projects are on the way—check back soon.'
-  const seoDescription = projects.length > 0
-    ? (language === 'ja'
-        ? `${displayName}のプロジェクト一覧。${projects.length}件を公開中。`
-        : `${displayName}'s project portfolio with ${projects.length} published projects.`)
-    : neutralCopy
+  const curated = selectPortfolioProjects(projects, 4)
+  const remainingIds = new Set(curated.map(project => project.id))
+  const additional = prioritizeProjects(projects).filter(project => !remainingIds.has(project.id))
 
   useSeo({
-    title: `${displayName} | ${heading}`,
-    description: seoDescription,
+    title: `${displayName} | ${language === 'ja' ? 'プロジェクト' : 'Projects'}`,
+    description: language === 'ja'
+      ? 'バックエンド / プラットフォーム領域を中心にした case studies。API、データシステム、CI/CD、クラウド運用、出荷済みプロダクトを扱います。'
+      : 'Case studies centered on backend/platform engineering, shipped products, APIs, data systems, CI/CD, and cloud operations.',
     path: '/projects'
   })
 
-  useEffect(() => {
-    const hosts = new Set<string>()
-    projects.forEach(project => {
-      const liveOrigin = extractOrigin(project.url)
-      const repoOrigin = extractOrigin(project.repo)
-      if (liveOrigin) hosts.add(liveOrigin)
-      if (repoOrigin) hosts.add(repoOrigin)
-    })
-    hosts.add('https://github.com')
-    const preconnectLinks = Array.from(hosts).map(origin => {
-      const link = document.createElement('link')
-      link.rel = 'preconnect'
-      link.href = origin
-      link.crossOrigin = ''
-      document.head.appendChild(link)
-      return link
-    })
-    return () => {
-      preconnectLinks.forEach(link => document.head.removeChild(link))
-    }
-  }, [projects.map(p => `${p.id}:${p.url || ''}:${p.repo || ''}`).join('|')])
-
-  useEffect(() => {
-    const heroImages = projects.slice(0, 2).map(p => p.cover).filter(Boolean) as string[]
-    const imageLinks = heroImages.map(src => {
-      const link = document.createElement('link')
-      link.rel = 'prefetch'
-      link.as = 'image'
-      link.href = src
-      document.head.appendChild(link)
-      return link
-    })
-    return () => {
-      imageLinks.forEach(link => document.head.removeChild(link))
-    }
-  }, [projects.slice(0, 2).map(p => p.cover || '').join('|')])
-
   if (projects.length === 0) {
     return (
-      <section>
-        <h1>{heading}</h1>
-        <p className="muted">{neutralCopy}</p>
+      <section className="stack">
+        <section className="card page-intro">
+          <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Projects'}</p>
+          <h1>{language === 'ja' ? '事例は準備中です' : 'Case studies are being prepared'}</h1>
+        </section>
       </section>
     )
   }
 
   return (
-    <section>
-      <h1>{heading}</h1>
-      <ul className="cards">
-        {projects.map((project, index) => {
-          const title = language === 'ja'
-            ? project.title.ja || project.title.en
-            : project.title.en || project.title.ja
-          const description = language === 'ja'
-            ? project.description.ja || project.description.en
-            : project.description.en || project.description.ja
-          const tags = language === 'ja'
-            ? project.tags.ja.length ? project.tags.ja : project.tags.en
-            : project.tags.en.length ? project.tags.en : project.tags.ja
-          const fallbackTitle = language === 'ja' ? 'プロジェクト' : 'Project'
+    <article className="stack">
+      <section className="card page-intro">
+        <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Projects'}</p>
+        <h1>{language === 'ja' ? '採用担当者向けの case studies' : 'Case studies for hiring review'}</h1>
+        <p className="lead-text">{localizedValue(CORE_ROLE_HEADLINE, language)}</p>
+        <p>
+          {language === 'ja'
+            ? 'ここでは、Jaron Rosenau の公開プロジェクトを、問題設定、担当範囲、アーキテクチャ、運用シグナルが見える形で整理しています。'
+            : 'This page prioritizes the public work that best shows Jaron Rosenau as a backend/platform engineer with end-to-end ownership.'}
+        </p>
+      </section>
 
-          return (
-            <li key={project.id} className="card project-card">
-              {project.cover && (
-                <div className="project-cover-wrapper">
-                  <img
-                    src={project.cover}
-                    alt={title || fallbackTitle}
-                    loading="lazy"
-                    decoding="async"
-                    width={960}
-                    height={540}
-                    className="project-cover"
-                  />
-                </div>
-              )}
-              <div className="card-body">
-                <h2>
-                  <Link to={`/projects/${encodeURIComponent(project.id)}`} prefetch="intent">
-                    {title || fallbackTitle}
-                  </Link>
-                </h2>
-                {description && <p>{description}</p>}
-              </div>
-              <ProjectActions project={project} language={language} position={index + 1} />
-              {tags.length > 0 && (
-                <div className="tags">{tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-    </section>
+      <section className="stack">
+        <div className="section-heading">
+          <p className="eyebrow">{language === 'ja' ? '代表事例' : 'Flagship work'}</p>
+          <h2>{language === 'ja' ? '優先して見るべき 4 件' : 'Four projects that best explain the story'}</h2>
+        </div>
+        <div className="case-study-grid">
+          {curated.map((project, index) => (
+            <CaseStudyCard
+              key={project.id}
+              project={project}
+              language={language}
+              position={index + 1}
+            />
+          ))}
+        </div>
+      </section>
+
+      {additional.length > 0 && (
+        <section className="stack">
+          <div className="section-heading">
+            <p className="eyebrow">{language === 'ja' ? '補足' : 'Additional work'}</p>
+            <h2>{language === 'ja' ? '他の公開プロジェクト' : 'Other public repositories'}</h2>
+          </div>
+          <ul className="cards compact-cards">
+            {additional.map(project => {
+              const title = localizedValue(project.title, language, project.id)
+              const narrative = projectNarrative(project)
+              const summary = localizedValue(narrative.summary, language)
+
+              return (
+                <li key={project.id} className="card compact-project-card">
+                  <h3>
+                    <Link to={`/projects/${encodeURIComponent(project.id)}`} prefetch="intent">
+                      {title}
+                    </Link>
+                  </h3>
+                  <p>{summary}</p>
+                  <div className="project-actions">
+                    <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button ghost" prefetch="intent">
+                      {language === 'ja' ? '詳細' : 'Details'}
+                    </Link>
+                    {project.repo && (
+                      <a href={project.repo} target="_blank" rel="noopener noreferrer" className="button ghost">
+                        {language === 'ja' ? 'ソース' : 'Source'}
+                      </a>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+    </article>
   )
-})
+}
 
-const ProjectActions = memo(function ProjectActions({
+function CaseStudyCard({
   project,
   language,
   position
@@ -197,114 +154,100 @@ const ProjectActions = memo(function ProjectActions({
   language: 'en' | 'ja'
   position: number
 }) {
-  const liveLabel = language === 'ja' ? 'ライブデモ' : 'Live demo'
-  const sourceLabel = language === 'ja' ? 'ソースを見る' : 'View source'
-  const detailLabel = language === 'ja' ? '詳細ページ' : 'Project page'
-  const accessibleTitle = project.title.en || project.title.ja || ''
-  const liveAria = accessibleTitle ? `${liveLabel}: ${accessibleTitle}` : liveLabel
-  const sourceAria = accessibleTitle ? `${sourceLabel}: ${accessibleTitle}` : sourceLabel
-  const detailAria = accessibleTitle ? `${detailLabel}: ${accessibleTitle}` : detailLabel
-  const sourceHref = project.repo || (project.url && project.url.includes('github.com') ? project.url : undefined)
+  const title = localizedValue(project.title, language, project.id)
+  const tags = language === 'ja'
+    ? (project.tags.ja.length ? project.tags.ja : project.tags.en)
+    : (project.tags.en.length ? project.tags.en : project.tags.ja)
+  const narrative = projectNarrative(project)
+  const summary = localizedValue(narrative.summary, language)
+  const problem = localizedValue(narrative.problem, language)
+  const owned = localizedValue(narrative.owned, language)
+  const architecture = localizedValue(narrative.architecture, language)
+  const result = localizedValue(narrative.result, language)
 
   return (
-    <div className="project-actions">
-      <Link
-        to={`/projects/${encodeURIComponent(project.id)}`}
-        className="button ghost"
-        aria-label={detailAria}
-        prefetch="intent"
-      >
-        {detailLabel}
-      </Link>
-      {project.url && (
-        <a
-          href={project.url}
-          target="_blank"
-          rel="noopener"
-          className="button secondary"
-          aria-label={liveAria}
-          onClick={() => trackOutboundProjectLink('demo', project.id, position, project.url!)}
-        >
-          {liveLabel}
-        </a>
+    <article className="card case-study-card">
+      {project.cover && (
+        <div className="project-cover-wrapper">
+          <img
+            src={project.cover}
+            alt={title}
+            loading="lazy"
+            decoding="async"
+            width={960}
+            height={540}
+            className="project-cover"
+          />
+        </div>
       )}
-      {sourceHref && (
-        <a
-          href={sourceHref}
-          target="_blank"
-          rel="noopener"
-          className="button ghost"
-          aria-label={sourceAria}
-          onClick={() => trackOutboundProjectLink('source', project.id, position, sourceHref)}
-        >
-          {sourceLabel}
-        </a>
+      <div className="card-body">
+        <p className="eyebrow">{language === 'ja' ? 'Case Study' : 'Case Study'}</p>
+        <h2>
+          <Link to={`/projects/${encodeURIComponent(project.id)}`} prefetch="intent">
+            {title}
+          </Link>
+        </h2>
+        <p>{summary}</p>
+      </div>
+      <dl className="detail-grid">
+        <div>
+          <dt>{language === 'ja' ? '問題設定' : 'Problem'}</dt>
+          <dd>{problem}</dd>
+        </div>
+        <div>
+          <dt>{language === 'ja' ? '担当範囲' : 'Owned directly'}</dt>
+          <dd>{owned}</dd>
+        </div>
+        <div>
+          <dt>{language === 'ja' ? 'スタック / 構成' : 'Architecture / stack'}</dt>
+          <dd>{architecture}</dd>
+        </div>
+        <div>
+          <dt>{language === 'ja' ? '結果 / 運用シグナル' : 'Result / signal'}</dt>
+          <dd>{result}</dd>
+        </div>
+      </dl>
+      {tags.length > 0 && (
+        <div className="tags">{tags.slice(0, 6).map(tag => <span key={tag}>{tag}</span>)}</div>
       )}
-    </div>
+      <div className="project-actions">
+        <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button ghost" prefetch="intent">
+          {language === 'ja' ? '詳細ページ' : 'Project page'}
+        </Link>
+        {project.url && (
+          <a
+            href={project.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="button secondary"
+            onClick={() => trackOutboundProjectLink('demo', project.id, position, project.url!)}
+          >
+            {language === 'ja' ? 'ライブ' : 'Live product'}
+          </a>
+        )}
+        {project.repo && (
+          <a
+            href={project.repo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="button ghost"
+            onClick={() => trackOutboundProjectLink('source', project.id, position, project.repo!)}
+          >
+            {language === 'ja' ? 'ソース' : 'Source'}
+          </a>
+        )}
+      </div>
+    </article>
   )
-})
-
-async function loadProjects(): Promise<ProjectRecord[]> {
-  const rawItems = await listProjects()
-  const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
-  const pickArray = (value: unknown) =>
-    Array.isArray(value)
-      ? value.map(item => pick(item)).filter(Boolean)
-      : []
-
-  return rawItems.map(item => {
-    const url = pick((item as any).url)
-    const repo = pick((item as any).repo ?? (item as any).source ?? (item as any).github)
-    const cover = pick((item as any).cover ?? (item as any).image ?? (item as any).thumbnail)
-    return {
-      id: String(item.id),
-      title: {
-        en: pick((item as any).title_en ?? (item as any).title),
-        ja: pick((item as any).title_ja)
-      },
-      description: {
-        en: pick((item as any).description_en ?? (item as any).description),
-        ja: pick((item as any).description_ja)
-      },
-      url: url || undefined,
-      repo: repo || undefined,
-      tags: {
-        en: pickArray((item as any).tags_en ?? (item as any).tags),
-        ja: pickArray((item as any).tags_ja)
-      },
-      cover: cover || undefined
-    }
-  })
 }
 
 function ProjectsSkeleton() {
   return (
-    <section>
+    <section className="route-skeleton">
+      <span className="skeleton-block skeleton-subheading" />
       <span className="skeleton-block skeleton-heading" />
-      <ul className="cards">
-        {[0, 1, 2].map(key => (
-          <li key={key} className="card">
-            <span className="skeleton-block skeleton-media" />
-            <span className="skeleton-block skeleton-subheading" />
-            <span className="skeleton-block skeleton-paragraph" />
-            <div className="skeleton-chip-row">
-              {[0, 1, 2].map(tag => (
-                <span key={tag} className="skeleton-block skeleton-pill" style={{ width: `${70 + tag * 12}px` }} />
-              ))}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <span className="skeleton-block skeleton-paragraph" />
+      <span className="skeleton-block skeleton-paragraph" />
     </section>
   )
-}
-
-function extractOrigin(url?: string) {
-  if (!url) return null
-  try {
-    const target = new URL(url)
-    return `${target.protocol}//${target.host}`
-  } catch {
-    return null
-  }
 }

@@ -1,19 +1,10 @@
 import { Link, LoaderFunctionArgs, useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
-import { listProjects } from '../lib/content'
+import { listProjects, type ProjectRecord } from '../lib/content'
+import { localizedValue, projectNarrative } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { absoluteSiteUrl, useSeo } from '../lib/seo'
 import type { AppShellContext } from '../components/Layout'
-
-type ProjectRecord = {
-  id: string
-  title: { en: string; ja: string }
-  description: { en: string; ja: string }
-  url?: string
-  repo?: string
-  tags: { en: string[]; ja: string[] }
-  cover?: string
-}
 
 type ProjectDetailLoaderData = {
   project: Promise<ProjectRecord | null>
@@ -38,11 +29,7 @@ export function Component() {
 
   return (
     <Suspense fallback={<ProjectDetailSkeleton />}>
-      <ProjectDetailContent
-        projectPromise={project}
-        language={language}
-        displayName={displayName}
-      />
+      <ProjectDetailContent projectPromise={project} language={language} displayName={displayName} />
     </Suspense>
   )
 }
@@ -64,32 +51,27 @@ function ProjectDetailContent({
     ? '指定されたプロジェクトは見つかりませんでした。'
     : 'The requested project page could not be found.'
   const title = project
-    ? (language === 'ja' ? (project.title.ja || project.title.en) : (project.title.en || project.title.ja))
+    ? localizedValue(project.title, language, project.id)
     : notFoundTitle
-  const description = project
-    ? (language === 'ja'
-        ? (project.description.ja || project.description.en)
-        : (project.description.en || project.description.ja))
+  const summary = project
+    ? localizedValue(projectNarrative(project).summary, language)
+    : notFoundDescription
+  const result = project
+    ? localizedValue(projectNarrative(project).result, language)
     : notFoundDescription
   const canonicalPath = project ? `/projects/${encodeURIComponent(project.id)}` : '/projects'
 
   useSeo({
-    title: `${displayName} | ${title || (language === 'ja' ? 'プロジェクト' : 'Project')}`,
-    description: project
-      ? (description
-          ? `${title} — ${description}`
-          : (language === 'ja'
-              ? `${displayName}によるプロジェクト紹介ページです。`
-              : `Project details by ${displayName}.`))
-      : notFoundDescription,
+    title: `${displayName} | ${title}`,
+    description: `${summary} ${result}`,
     path: canonicalPath,
     ...(project
       ? {
           structuredData: {
             '@context': 'https://schema.org',
             '@type': 'CreativeWork',
-            name: title || project.id,
-            description: description || undefined,
+            name: title,
+            description: summary,
             url: absoluteSiteUrl(canonicalPath)
           }
         }
@@ -113,6 +95,10 @@ function ProjectDetailContent({
   const tags = language === 'ja'
     ? (project.tags.ja.length ? project.tags.ja : project.tags.en)
     : (project.tags.en.length ? project.tags.en : project.tags.ja)
+  const narrative = projectNarrative(project)
+  const problem = localizedValue(narrative.problem, language)
+  const owned = localizedValue(narrative.owned, language)
+  const architecture = localizedValue(narrative.architecture, language)
 
   return (
     <article className="stack">
@@ -121,13 +107,30 @@ function ProjectDetailContent({
           {language === 'ja' ? 'プロジェクト一覧へ戻る' : 'Back to Projects'}
         </Link>
       </p>
-      <h1>{title || (language === 'ja' ? 'プロジェクト' : 'Project')}</h1>
-      {description && <p>{description}</p>}
+
+      <section className="card page-intro">
+        <p className="eyebrow">{language === 'ja' ? 'Case Study' : 'Case Study'}</p>
+        <h1>{title}</h1>
+        <p className="lead-text">{summary}</p>
+        <div className="project-actions">
+          {project.url && (
+            <a href={project.url} target="_blank" rel="noopener noreferrer" className="button secondary">
+              {language === 'ja' ? 'ライブを見る' : 'Open live product'}
+            </a>
+          )}
+          {project.repo && (
+            <a href={project.repo} target="_blank" rel="noopener noreferrer" className="button ghost">
+              {language === 'ja' ? 'ソースを見る' : 'View source'}
+            </a>
+          )}
+        </div>
+      </section>
+
       {project.cover && (
-        <div className="project-cover-wrapper">
+        <div className="project-cover-wrapper project-detail-cover">
           <img
             src={project.cover}
-            alt={title || (language === 'ja' ? 'プロジェクト画像' : 'Project cover image')}
+            alt={title}
             loading="eager"
             decoding="async"
             width={960}
@@ -136,22 +139,33 @@ function ProjectDetailContent({
           />
         </div>
       )}
-      <div className="project-actions">
-        {project.url && (
-          <a href={project.url} target="_blank" rel="noopener" className="button secondary">
-            {language === 'ja' ? 'ライブデモ' : 'Live demo'}
-          </a>
-        )}
-        {project.repo && (
-          <a href={project.repo} target="_blank" rel="noopener" className="button ghost">
-            {language === 'ja' ? 'ソースを見る' : 'View source'}
-          </a>
-        )}
-      </div>
+
+      <section className="case-study-section">
+        <dl className="detail-grid large-detail-grid">
+          <div>
+            <dt>{language === 'ja' ? '問題設定' : 'Problem statement'}</dt>
+            <dd>{problem}</dd>
+          </div>
+          <div>
+            <dt>{language === 'ja' ? '担当範囲' : 'What I owned'}</dt>
+            <dd>{owned}</dd>
+          </div>
+          <div>
+            <dt>{language === 'ja' ? '構成 / スタック' : 'Architecture / stack'}</dt>
+            <dd>{architecture}</dd>
+          </div>
+          <div>
+            <dt>{language === 'ja' ? '結果 / 運用シグナル' : 'Result / operational signal'}</dt>
+            <dd>{result}</dd>
+          </div>
+        </dl>
+      </section>
+
       {tags.length > 0 && (
-        <div className="tags">
-          {tags.map(tag => <span key={tag}>{tag}</span>)}
-        </div>
+        <section className="resume-section">
+          <h2>{language === 'ja' ? '技術キーワード' : 'Technical keywords'}</h2>
+          <div className="tags">{tags.map(tag => <span key={tag}>{tag}</span>)}</div>
+        </section>
       )}
     </article>
   )
@@ -159,37 +173,8 @@ function ProjectDetailContent({
 
 async function loadProject(projectId: string): Promise<ProjectRecord | null> {
   if (!projectId) return null
-  const rawItems = await listProjects()
-  const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
-  const pickArray = (value: unknown) =>
-    Array.isArray(value)
-      ? value.map(item => pick(item)).filter(Boolean)
-      : []
-
-  const matched = rawItems.find(item => String(item.id) === projectId)
-  if (!matched) return null
-
-  const url = pick((matched as any).url)
-  const repo = pick((matched as any).repo ?? (matched as any).source ?? (matched as any).github)
-  const cover = pick((matched as any).cover ?? (matched as any).image ?? (matched as any).thumbnail)
-  return {
-    id: String(matched.id),
-    title: {
-      en: pick((matched as any).title_en ?? (matched as any).title),
-      ja: pick((matched as any).title_ja)
-    },
-    description: {
-      en: pick((matched as any).description_en ?? (matched as any).description),
-      ja: pick((matched as any).description_ja)
-    },
-    url: url || undefined,
-    repo: repo || undefined,
-    tags: {
-      en: pickArray((matched as any).tags_en ?? (matched as any).tags),
-      ja: pickArray((matched as any).tags_ja)
-    },
-    cover: cover || undefined
-  }
+  const projects = await listProjects()
+  return projects.find(project => project.id === projectId) ?? null
 }
 
 function ProjectDetailSkeleton() {
