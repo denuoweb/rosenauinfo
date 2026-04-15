@@ -10,6 +10,7 @@ import {
   updateDoc
 } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import ProjectCoverMedia from '../../components/ProjectCoverMedia'
 
 type EditableProject = {
   id: string
@@ -515,6 +516,9 @@ export default function AdminProjects() {
         <p className="muted">
           Fetch repositories from GitHub accounts, select the ones you want, and import them into Projects.
         </p>
+        <p className="muted">
+          GitHub-hosted cover images are proxied and cached on the public site so rate limits do not break project cards.
+        </p>
         <label>
           GitHub usernames (comma separated)
           <input
@@ -673,7 +677,11 @@ export default function AdminProjects() {
         </label>
         {newProject.cover && (
           <div className="project-cover-preview">
-            <img src={newProject.cover} alt="Cover preview" />
+            <ProjectCoverMedia
+              cover={newProject.cover}
+              alt="Cover preview"
+              fallbackText="Preview unavailable"
+            />
           </div>
         )}
         <label>
@@ -730,7 +738,11 @@ export default function AdminProjects() {
               </label>
               {project.cover && (
                 <div className="project-cover-preview">
-                  <img src={project.cover} alt="Cover preview" />
+                  <ProjectCoverMedia
+                    cover={project.cover}
+                    alt="Cover preview"
+                    fallbackText="Preview unavailable"
+                  />
                 </div>
               )}
               <label>

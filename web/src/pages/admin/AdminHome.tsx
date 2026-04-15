@@ -3,11 +3,59 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 
 type Bilingual = { en: string; ja: string }
+type Lang = 'en' | 'ja'
+type EditableLink = {
+  id: string
+  label: string
+  url: string
+}
+
+const createId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+  return `link-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+const parseLinks = (value: unknown): EditableLink[] => {
+  if (typeof value !== 'string') return []
+
+  return value
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const separatorIndex = line.indexOf('|')
+      if (separatorIndex === -1) {
+        return {
+          id: createId(),
+          label: line,
+          url: ''
+        }
+      }
+
+      return {
+        id: createId(),
+        label: line.slice(0, separatorIndex).trim(),
+        url: line.slice(separatorIndex + 1).trim()
+      }
+    })
+}
+
+const stringifyLinks = (links: EditableLink[]) =>
+  links
+    .map(link => ({
+      label: link.label.trim(),
+      url: link.url.trim()
+    }))
+    .filter(link => link.label && link.url)
+    .map(link => `${link.label} | ${link.url}`)
+    .join('\n')
 
 export default function AdminHome() {
   const [siteName, setSiteName] = useState<Bilingual>({ en: '', ja: '' })
   const [blurb, setBlurb] = useState<Bilingual>({ en: '', ja: '' })
-  const [links, setLinks] = useState<Bilingual>({ en: '', ja: '' })
+  const [links, setLinks] = useState<{ [key in Lang]: EditableLink[] }>({ en: [], ja: [] })
   const [contactEmail, setContactEmail] = useState('')
   const [profileLinks, setProfileLinks] = useState({ github: '', linkedin: '' })
   const [savingSite, setSavingSite] = useState(false)
@@ -42,8 +90,8 @@ export default function AdminHome() {
           ja: (data.blurb_ja as string) || (data.blurb as string) || ''
         })
         setLinks({
-          en: (data.links_en as string) || '',
-          ja: (data.links_ja as string) || ''
+          en: parseLinks(data.links_en),
+          ja: parseLinks(data.links_ja)
         })
       }
     }
@@ -84,10 +132,18 @@ export default function AdminHome() {
     e.preventDefault()
     setSavingLinks(true)
     try {
+      const next = {
+        en: stringifyLinks(links.en),
+        ja: stringifyLinks(links.ja)
+      }
       await setDoc(doc(db, 'public', 'home'), {
-        links_en: links.en,
-        links_ja: links.ja
+        links_en: next.en,
+        links_ja: next.ja
       }, { merge: true })
+      setLinks({
+        en: parseLinks(next.en),
+        ja: parseLinks(next.ja)
+      })
       setMessage('Updated homepage links')
     } finally {
       setSavingLinks(false)
@@ -126,6 +182,34 @@ export default function AdminHome() {
     }
   }
 
+  function addLink(lang: Lang) {
+    setLinks(prev => ({
+      ...prev,
+      [lang]: [
+        ...prev[lang],
+        {
+          id: createId(),
+          label: '',
+          url: ''
+        }
+      ]
+    }))
+  }
+
+  function updateLink(lang: Lang, id: string, key: 'label' | 'url', value: string) {
+    setLinks(prev => ({
+      ...prev,
+      [lang]: prev[lang].map(link => (link.id === id ? { ...link, [key]: value } : link))
+    }))
+  }
+
+  function removeLink(lang: Lang, id: string) {
+    setLinks(prev => ({
+      ...prev,
+      [lang]: prev[lang].filter(link => link.id !== id)
+    }))
+  }
+
   return (
     <div className="stack">
       <h2>Home &amp; Profile</h2>
@@ -162,25 +246,84 @@ export default function AdminHome() {
 
       <form className="card form" onSubmit={saveLinks}>
         <h3>Homepage Links</h3>
-        <p>Add one link per line using the format: label | URL</p>
-        <label>
-          Links (English)
-          <textarea
-            value={links.en}
-            onChange={e => setLinks(prev => ({ ...prev, en: e.target.value }))}
-            rows={4}
-            placeholder="Projects | /projects"
-          />
-        </label>
-        <label>
-          リンク（日本語）
-          <textarea
-            value={links.ja}
-            onChange={e => setLinks(prev => ({ ...prev, ja: e.target.value }))}
-            rows={4}
-            placeholder="プロジェクト | /projects"
-          />
-        </label>
+        <p>Only rows with both a label and URL are published, so empty LinkedIn rows will not show on the site.</p>
+
+        <section className="stack" aria-labelledby="homepage-links-en-heading">
+          <div className="section-editor-header">
+            <h4 id="homepage-links-en-heading">Links (English)</h4>
+            <button type="button" onClick={() => addLink('en')}>
+              Add Link
+            </button>
+          </div>
+          {links.en.length === 0 && <p className="muted">No English links yet.</p>}
+          <div className="section-editors">
+            {links.en.map((link, index) => (
+              <div key={link.id} className="section-editor">
+                <div className="section-editor-header">
+                  <h4>Link {index + 1}</h4>
+                  <button type="button" className="danger" onClick={() => removeLink('en', link.id)}>
+                    Delete
+                  </button>
+                </div>
+                <label>
+                  Label
+                  <input
+                    value={link.label}
+                    onChange={e => updateLink('en', link.id, 'label', e.target.value)}
+                    placeholder="LinkedIn"
+                  />
+                </label>
+                <label>
+                  URL
+                  <input
+                    value={link.url}
+                    onChange={e => updateLink('en', link.id, 'url', e.target.value)}
+                    placeholder="https://linkedin.com/in/your-profile"
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="stack" aria-labelledby="homepage-links-ja-heading">
+          <div className="section-editor-header">
+            <h4 id="homepage-links-ja-heading">リンク（日本語）</h4>
+            <button type="button" onClick={() => addLink('ja')}>
+              リンクを追加
+            </button>
+          </div>
+          {links.ja.length === 0 && <p className="muted">日本語のリンクはまだありません。</p>}
+          <div className="section-editors">
+            {links.ja.map((link, index) => (
+              <div key={link.id} className="section-editor">
+                <div className="section-editor-header">
+                  <h4>リンク {index + 1}</h4>
+                  <button type="button" className="danger" onClick={() => removeLink('ja', link.id)}>
+                    削除
+                  </button>
+                </div>
+                <label>
+                  ラベル
+                  <input
+                    value={link.label}
+                    onChange={e => updateLink('ja', link.id, 'label', e.target.value)}
+                    placeholder="LinkedIn"
+                  />
+                </label>
+                <label>
+                  URL
+                  <input
+                    value={link.url}
+                    onChange={e => updateLink('ja', link.id, 'url', e.target.value)}
+                    placeholder="https://linkedin.com/in/your-profile"
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <button type="submit" disabled={savingLinks}>
           {savingLinks ? 'Saving…' : 'Save Links'}
         </button>

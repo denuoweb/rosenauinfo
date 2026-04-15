@@ -1,4 +1,5 @@
 import { onRequest } from 'firebase-functions/v2/https'
+import { projectCoverHandler } from './projectCover.js'
 import { sitemapHandler } from './sitemap.js'
 import { resumeHtmlHandler, resumePdfHandler } from './resume.js'
 
@@ -15,4 +16,9 @@ export const resumeHtml = onRequest(
 export const resumePdf = onRequest(
   { cors: ['*'], invoker: 'public' },
   resumePdfHandler
+)
+
+export const projectCover = onRequest(
+  { cors: ['*'], invoker: 'public' },
+  projectCoverHandler
 )

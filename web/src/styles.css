@@ -22,7 +22,7 @@ img, picture, video, canvas, svg { display: block; max-width: 100%; }
   --card-bg: var(--glass-bg);
   --card-border: var(--glass-border);
   --card-shadow: var(--glass-shadow);
-  --content-max-width: min(100%, 1100px);
+  --content-max-width: min(100%, 1520px);
   --section-spacing: clamp(1.5rem, 3vw, 2.75rem);
   --radius-lg: 18px;
   --radius-md: 12px;
@@ -74,9 +74,9 @@ pre, code {
 .app-shell {
   position: relative;
   z-index: 0;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   padding-top: var(--header-offset);
 }
@@ -406,6 +406,28 @@ pre, code {
   background: rgba(14,165,233,0.16);
   color: var(--accent-color);
 }
+.sponsor-card {
+  display: grid;
+  gap: clamp(0.85rem, 0.7rem + 0.9vw, 1.4rem);
+  justify-items: start;
+}
+.sponsor-copy {
+  display: grid;
+  gap: .4rem;
+}
+.sponsor-embed {
+  width: min(100%, 640px);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  background: var(--card-bg);
+}
+.sponsor-embed iframe {
+  display: block;
+  width: 100%;
+  min-height: 225px;
+  border: 0;
+}
 
 .resume-download {
   margin-top: 1.5rem;
@@ -508,6 +530,24 @@ pre, code {
   height: auto;
   object-fit: contain;
 }
+.project-cover-fallback {
+  width: 100%;
+  height: 100%;
+  display:grid;
+  place-items:center;
+  padding: clamp(1rem, 0.9rem + 1vw, 1.5rem);
+  border-radius: calc(var(--radius-md) - 4px);
+  background:
+    radial-gradient(circle at top left, rgba(14,165,233,0.18), transparent 55%),
+    linear-gradient(135deg, rgba(14,165,233,0.16), rgba(15,23,42,0.08));
+  color: var(--accent-color);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+.project-cover-fallback span {
+  max-width: 18ch;
+}
 .resume-upload-grid {
   display:grid;
   gap: clamp(1rem, 0.9rem + 1vw, 1.5rem);
@@ -515,16 +555,21 @@ pre, code {
 }
 
 .main {
+  flex: 1 0 auto;
   padding: clamp(1.25rem, 1rem + 2vw, 2.5rem) clamp(1.25rem, 1rem + 3vw, 2.75rem);
   width: min(100%, 980px);
   margin: 0 auto;
+  min-width: 0;
+}
+.main[data-route="projects"] {
+  width: min(100%, 1480px);
 }
 .main > * + * {
   margin-top: var(--section-spacing);
 }
 .footer {
-  width: 100%;
   margin-top: auto;
+  width: 100%;
   padding: clamp(1rem, 0.8rem + 1vw, 1.5rem);
   border-top: 1px solid var(--glass-border);
   background: var(--glass-bg);
@@ -557,17 +602,44 @@ pre, code {
   display:flex;
   flex-direction:column;
   gap: clamp(0.65rem, 0.55rem + 0.6vw, 1.1rem);
+  min-width: 0;
 }
 .tags { display:flex; flex-wrap:wrap; gap:.4rem; }
 .tags span { display:inline-flex; align-items:center; border:1px solid var(--glass-border); border-radius:999px; padding:0 .65rem; font-size:var(--font-size-sm); }
 
-.project-card { gap: clamp(0.8rem, 0.6rem + 0.8vw, 1.4rem); }
+.project-card {
+  gap: clamp(0.8rem, 0.6rem + 0.8vw, 1.4rem);
+  min-width: 0;
+}
 .project-cover {
   display:block;
 }
-.project-card .card-body { display:grid; gap:.75rem; }
-.project-card h2 { font-size: var(--font-size-lg); margin:0; }
+.project-card .card-body {
+  display:grid;
+  gap:.75rem;
+  min-width: 0;
+}
+.project-card h2 {
+  font-size: var(--font-size-lg);
+  margin:0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .project-card p { margin:0; }
+.case-study-card,
+.compact-project-card {
+  min-width: 0;
+}
+.case-study-card .card-body,
+.compact-project-card h3,
+.case-study-card h2,
+.proof-card h3 {
+  min-width: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .project-actions {
   display:flex;
   flex-wrap:wrap;
@@ -739,6 +811,22 @@ label.checkbox-line input { width:auto; }
   }
   .navactions {
     margin-left: auto;
+  }
+}
+
+@media (min-width: 980px) {
+  .main[data-route="projects"] .cards,
+  .main[data-route="projects"] .case-study-grid,
+  .main[data-route="projects"] .compact-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .main[data-route="projects"] .cards,
+  .main[data-route="projects"] .case-study-grid,
+  .main[data-route="projects"] .compact-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useLoaderData, useNavigation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLoaderData, useLocation, useNavigation } from 'react-router-dom'
 import { Suspense, memo, useMemo, use, useState, useCallback, useEffect, useRef } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import ThemeSwitcher from './ThemeSwitcher'
@@ -31,6 +31,7 @@ type NavItem = {
 }
 
 type NavigationStatus = 'idle' | 'loading' | 'submitting'
+type RouteMode = 'default' | 'projects'
 
 export type ProfileLink = {
   label: string
@@ -210,12 +211,14 @@ const AppChrome = memo(function AppChrome({
   language,
   navItems,
   navigationState,
+  routeMode,
   children
 }: {
   site: SiteCopy
   language: SupportedLanguage
   navItems: NavItem[]
   navigationState: NavigationStatus
+  routeMode: RouteMode
   children: ReactNode
 }) {
   const headerRef = useRef<HTMLElement | null>(null)
@@ -261,7 +264,7 @@ const AppChrome = memo(function AppChrome({
         language={language}
         contactEmail={site.contactEmail}
       />
-      <main className="main" data-navigation={navigationState}>
+      <main className="main" data-navigation={navigationState} data-route={routeMode}>
         {children}
       </main>
       <Footer site={site} language={language} />
@@ -305,7 +308,9 @@ function AppChromeSkeleton() {
 export default function Layout() {
   const { language } = useLanguage()
   const loaderData = useLoaderData() as AppLayoutLoaderData
+  const location = useLocation()
   const navigation = useNavigation()
+  const routeMode: RouteMode = location.pathname.startsWith('/projects') ? 'projects' : 'default'
 
   const navItems = useMemo<NavItem[]>(() => ([
     { to: '/', label: navLabels[language].home, end: true },
@@ -322,6 +327,7 @@ export default function Layout() {
         language={language}
         navItems={navItems}
         navigationState={navigation.state as NavigationStatus}
+        routeMode={routeMode}
       />
     </Suspense>
   )
@@ -331,17 +337,25 @@ function ResolvedAppChrome({
   sitePromise,
   language,
   navItems,
-  navigationState
+  navigationState,
+  routeMode
 }: {
   sitePromise: Promise<Record<string, unknown> | null>
   language: SupportedLanguage
   navItems: NavItem[]
   navigationState: NavigationStatus
+  routeMode: RouteMode
 }) {
   const siteRecord = use(sitePromise)
   const site = normalizeSite(siteRecord)
   return (
-    <AppChrome site={site} language={language} navItems={navItems} navigationState={navigationState}>
+    <AppChrome
+      site={site}
+      language={language}
+      navItems={navItems}
+      navigationState={navigationState}
+      routeMode={routeMode}
+    >
       <Outlet context={{ site }} />
     </AppChrome>
   )

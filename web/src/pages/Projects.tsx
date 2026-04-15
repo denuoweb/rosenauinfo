@@ -10,6 +10,7 @@ import {
 } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { trackOutboundProjectLink } from '../lib/analytics'
+import ProjectCoverMedia from '../components/ProjectCoverMedia'
 import { useSeo } from '../lib/seo'
 import type { AppShellContext } from '../components/Layout'
 
@@ -87,7 +88,6 @@ function ProjectsContent({
             : 'This page prioritizes the public work that best shows Jaron Rosenau as a backend/platform engineer with end-to-end ownership.'}
         </p>
       </section>
-
       <section className="stack">
         <div className="section-heading">
           <p className="eyebrow">{language === 'ja' ? '代表事例' : 'Flagship work'}</p>
@@ -169,14 +169,11 @@ function CaseStudyCard({
     <article className="card case-study-card">
       {project.cover && (
         <div className="project-cover-wrapper">
-          <img
-            src={project.cover}
+          <ProjectCoverMedia
+            cover={project.cover}
             alt={title}
-            loading="lazy"
-            decoding="async"
-            width={960}
-            height={540}
             className="project-cover"
+            fallbackText={title}
           />
         </div>
       )}

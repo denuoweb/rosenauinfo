@@ -21,6 +21,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/project-cover",
+        "function": "projectCover"
+      },
+      {
         "source": "/resume",
         "function": "resumeHtml"
       },
