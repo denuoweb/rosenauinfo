@@ -1,4 +1,4 @@
-import React from 'react'
+import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { routes } from './routes'
@@ -11,7 +11,7 @@ import { LanguageProvider } from './lib/language'
 const router = createBrowserRouter(routes)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <AuthProvider>
       <LanguageProvider>
         <ThemeProvider>
@@ -19,5 +19,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </ThemeProvider>
       </LanguageProvider>
     </AuthProvider>
-  </React.StrictMode>
+  </StrictMode>
 )

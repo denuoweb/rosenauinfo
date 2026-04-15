@@ -64,8 +64,8 @@ const stringifyLinks = (links: EditableLink[]) =>
 
 function buildContactFallback(displayName: string, language: 'en' | 'ja') {
   return language === 'ja'
-    ? `${displayName}へのご連絡は、協業、コンサルティング、またはバックエンド / プラットフォーム領域のご相談についてどうぞ。`
-    : `Reach out to ${displayName} about project collaboration, consulting work, or backend/platform systems.`
+    ? `${displayName}へのご連絡は、実装 / 連携案件、技術導入、またはバックエンド delivery のご相談についてどうぞ。`
+    : `Reach out to ${displayName} about implementation and integration work, technical delivery, or backend systems.`
 }
 
 function normalizeContactIntro(value: string, displayName: string, language: 'en' | 'ja') {

@@ -3,7 +3,13 @@ import { Suspense, use } from 'react'
 import { getPublicDoc } from '../lib/content'
 import { useLanguage } from '../lib/language'
 import { absoluteSiteUrl, useSeo } from '../lib/seo'
-import type { AppShellContext, ProfileLink } from '../components/Layout'
+import {
+  dedupeProfileLinks,
+  getLocalizedSiteName,
+  parseProfileLinks,
+  type ProfileLink
+} from '../lib/site'
+import type { AppShellContext } from '../components/Layout'
 
 type ContactLoaderData = {
   contact: Promise<ContactCopy>
@@ -52,7 +58,7 @@ function ContactContent({
   site: AppShellContext['site']
 }) {
   const contact = use(contactPromise)
-  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+  const displayName = getLocalizedSiteName(site, language)
   const heading = language === 'ja' ? `${displayName}への連絡` : `Contact ${displayName}`
   const introRaw = language === 'ja'
     ? (contact.intro.ja || contact.intro.en)
@@ -64,7 +70,7 @@ function ContactContent({
   const localizedLinks = language === 'ja'
     ? (contact.links.ja.length ? contact.links.ja : contact.links.en)
     : (contact.links.en.length ? contact.links.en : contact.links.ja)
-  const links = dedupeLinks([...site.profileLinks, ...localizedLinks])
+  const links = dedupeProfileLinks([...site.profileLinks, ...localizedLinks])
   const emailLabel = language === 'ja' ? 'メールで連絡' : 'Email'
 
   useSeo({
@@ -136,64 +142,17 @@ async function loadContactCopy(): Promise<ContactCopy> {
       ja: pick(doc?.availability_ja ?? doc?.availability)
     },
     links: {
-      en: parseLinks(doc?.links_en ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as),
-      ja: parseLinks(doc?.links_ja ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as)
+      en: parseProfileLinks(doc?.links_en ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as),
+      ja: parseProfileLinks(doc?.links_ja ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as)
     }
   }
-}
-
-function parseLinks(raw: unknown): ProfileLink[] {
-  const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
-  const toEntry = (entry: string, index: number): ProfileLink | null => {
-    if (!entry) return null
-    const [rawLabel, rawUrl] = entry.includes('|')
-      ? entry.split('|', 2).map(part => part.trim())
-      : [`Profile ${index + 1}`, entry]
-    const withProtocol = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`
-    try {
-      const parsed = new URL(withProtocol)
-      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-        return null
-      }
-      return {
-        label: rawLabel || `Profile ${index + 1}`,
-        url: parsed.toString()
-      }
-    } catch {
-      return null
-    }
-  }
-
-  if (Array.isArray(raw)) {
-    return raw
-      .map(item => pick(item))
-      .map((entry, index) => toEntry(entry, index))
-      .filter((entry): entry is ProfileLink => Boolean(entry))
-  }
-
-  return pick(raw)
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map((entry, index) => toEntry(entry, index))
-    .filter((entry): entry is ProfileLink => Boolean(entry))
-}
-
-function dedupeLinks(links: ProfileLink[]): ProfileLink[] {
-  const map = new Map<string, ProfileLink>()
-  links.forEach(link => {
-    if (!map.has(link.url)) {
-      map.set(link.url, link)
-    }
-  })
-  return Array.from(map.values())
 }
 
 function normalizeContactIntro(value: string, displayName: string, language: 'en' | 'ja') {
   const trimmed = value.trim()
   const fallback = language === 'ja'
-    ? `${displayName}へのご連絡は、協業、コンサルティング、またはバックエンド / プラットフォーム領域のご相談についてどうぞ。`
-    : `Reach out to ${displayName} about project collaboration, consulting work, or backend/platform systems.`
+    ? `${displayName}へのご連絡は、実装 / 連携案件、技術導入、またはバックエンド delivery のご相談についてどうぞ。`
+    : `Reach out to ${displayName} about implementation and integration work, technical delivery, or backend systems.`
 
   if (!trimmed) return fallback
   if (/\bhiring\b|\bhire\b|\brecruit\w*\b|\brole(?:s)?\b|\bopportunit(?:y|ies)\b|採用/i.test(trimmed)) {

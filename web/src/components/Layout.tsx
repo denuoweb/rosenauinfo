@@ -5,6 +5,7 @@ import ThemeSwitcher from './ThemeSwitcher'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useLanguage } from '../lib/language'
 import type { SupportedLanguage } from '../lib/language'
+import { getLocalizedSiteName, normalizeSite, type SiteCopy } from '../lib/site'
 import type { AppLayoutLoaderData } from '../routes'
 
 const navLabels = {
@@ -12,14 +13,14 @@ const navLabels = {
     home: 'Home',
     about: 'About',
     resume: 'Resume',
-    projects: 'Projects',
+    projects: 'Case Studies',
     contact: 'Contact'
   },
   ja: {
     home: 'ホーム',
     about: '紹介',
     resume: '履歴書',
-    projects: 'プロジェクト',
+    projects: '事例',
     contact: '連絡先'
   }
 }
@@ -32,23 +33,6 @@ type NavItem = {
 
 type NavigationStatus = 'idle' | 'loading' | 'submitting'
 type RouteMode = 'default' | 'projects'
-
-export type ProfileLink = {
-  label: string
-  url: string
-}
-
-export type SiteCopy = {
-  name: { en: string; ja: string }
-  footerNote?: string
-  contactEmail?: string
-  profileLinks: ProfileLink[]
-  resume: {
-    enUrl?: string
-    jaUrl?: string
-    jaStatus?: string
-  }
-}
 
 export type AppShellContext = {
   site: SiteCopy
@@ -121,24 +105,28 @@ const Header = memo(function Header({
   }, [clearCopyTimer, contactEmail, runFallbackCopy])
 
   return (
-    <nav
+    <header
       ref={headerRef}
       className="topnav"
-      aria-label={language === 'ja' ? '主要ナビゲーション' : 'Primary navigation'}
     >
-      <div className="navcontent">
+      <div className="navcontent shell-frame">
         <Link to="/" className="brand" prefetch="intent">
           {siteName}
         </Link>
-        <ul className="navmenu">
-          {navItems.map(item => (
-            <li key={item.to}>
-              <NavLink to={item.to} end={item.end} prefetch="intent">
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        <nav
+          className="navlinks"
+          aria-label={language === 'ja' ? '主要ナビゲーション' : 'Primary navigation'}
+        >
+          <ul className="navmenu">
+            {navItems.map(item => (
+              <li key={item.to}>
+                <NavLink to={item.to} end={item.end} prefetch="intent">
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
         <div className="navactions">
           {contactEmail && (
             <div className="nav-contact-group">
@@ -181,7 +169,7 @@ const Header = memo(function Header({
           <ThemeSwitcher />
         </div>
       </div>
-    </nav>
+    </header>
   )
 })
 
@@ -199,7 +187,7 @@ const Footer = memo(function Footer({
 
   return (
     <footer className="footer">
-      <div className="footer-line">
+      <div className="footer-line shell-frame">
         <small>{baseCopy}</small>
       </div>
     </footer>
@@ -254,17 +242,20 @@ const AppChrome = memo(function AppChrome({
   }, [language, site.contactEmail])
 
   return (
-    <div className="container app-shell">
+    <div className={`container app-shell ${routeMode === 'projects' ? 'app-shell--wide' : ''}`}>
+      <a className="skip-link" href="#main-content">
+        {language === 'ja' ? '本文へ移動' : 'Skip to content'}
+      </a>
       <span className="route-progress" data-active={navigationState !== 'idle'} aria-hidden="true" />
       <div className="background-art" aria-hidden="true" />
       <Header
         headerRef={headerRef}
-        siteName={language === 'ja' ? site.name.ja || site.name.en : site.name.en || site.name.ja}
+        siteName={getLocalizedSiteName(site, language)}
         navItems={navItems}
         language={language}
         contactEmail={site.contactEmail}
       />
-      <main className="main" data-navigation={navigationState} data-route={routeMode}>
+      <main id="main-content" className="main">
         {children}
       </main>
       <Footer site={site} language={language} />
@@ -272,26 +263,31 @@ const AppChrome = memo(function AppChrome({
   )
 })
 
-function AppChromeSkeleton() {
+export function LayoutHydrateFallback() {
   return (
     <div className="container app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <nav className="topnav">
-        <div className="navcontent">
+        <div className="navcontent shell-frame">
           <span className="brand skeleton-block skeleton-pill" />
-          <ul className="navmenu">
-            {[0, 1, 2].map(n => (
-              <li key={n}>
-                <span className="skeleton-block skeleton-text" style={{ width: `${90 - n * 10}px` }} />
-              </li>
-            ))}
-          </ul>
+          <div className="navlinks">
+            <ul className="navmenu">
+              {[0, 1, 2].map(n => (
+                <li key={n}>
+                  <span className="skeleton-block skeleton-text" style={{ width: `${90 - n * 10}px` }} />
+                </li>
+              ))}
+            </ul>
+          </div>
           <div className="navactions">
             <span className="skeleton-block skeleton-button" />
             <span className="skeleton-block skeleton-button" />
           </div>
         </div>
       </nav>
-      <main className="main">
+      <main id="main-content" className="main">
         <div className="page-skeleton">
           <span className="skeleton-block skeleton-heading" />
           <span className="skeleton-block skeleton-paragraph" />
@@ -299,7 +295,9 @@ function AppChromeSkeleton() {
         </div>
       </main>
       <footer className="footer">
-        <span className="skeleton-block skeleton-text" style={{ width: '160px' }} />
+        <div className="footer-line shell-frame">
+          <span className="skeleton-block skeleton-text" style={{ width: '160px' }} />
+        </div>
       </footer>
     </div>
   )
@@ -321,7 +319,7 @@ export default function Layout() {
   ]), [language])
 
   return (
-    <Suspense fallback={<AppChromeSkeleton />}>
+    <Suspense fallback={<LayoutHydrateFallback />}>
       <ResolvedAppChrome
         sitePromise={loaderData.site}
         language={language}
@@ -359,94 +357,4 @@ function ResolvedAppChrome({
       <Outlet context={{ site }} />
     </AppChrome>
   )
-}
-
-function normalizeSite(raw: Record<string, unknown> | null): SiteCopy {
-  const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
-  const rawEn = pick(raw?.name_en ?? raw?.name)
-  const rawJa = pick(raw?.name_ja ?? raw?.name)
-  const nameEn = rawEn || rawJa || 'Portfolio'
-  const nameJa = rawJa || rawEn || 'ポートフォリオ'
-  const footerNote = pick(raw?.footerNote ?? raw?.footer_note)
-  const resumeEnUrl = pick(raw?.resume_url_en ?? raw?.resume_url)
-  const resumeJaUrl = pick(raw?.resume_url_ja)
-  const resumeJaStatus = pick(raw?.resume_ja_status)
-  const contactEmail = pick(raw?.contactEmail ?? raw?.contact_email ?? raw?.email)
-  const profileLinks = normalizeProfileLinks(raw, pick)
-
-  return {
-    name: { en: nameEn, ja: nameJa },
-    footerNote,
-    contactEmail: contactEmail || undefined,
-    profileLinks,
-    resume: {
-      enUrl: resumeEnUrl || undefined,
-      jaUrl: resumeJaUrl || undefined,
-      jaStatus: resumeJaStatus || undefined
-    }
-  }
-}
-
-function normalizeProfileLinks(raw: Record<string, unknown> | null, pick: (value: unknown) => string): ProfileLink[] {
-  if (!raw) return []
-
-  const knownFields: Array<{ label: string; value: unknown }> = [
-    { label: 'GitHub', value: raw.githubUrl ?? raw.github_url ?? raw.github },
-    { label: 'LinkedIn', value: raw.linkedinUrl ?? raw.linkedin_url ?? raw.linkedin },
-    { label: 'X', value: raw.xUrl ?? raw.x_url ?? raw.twitterUrl ?? raw.twitter_url ?? raw.twitter },
-    { label: 'YouTube', value: raw.youtubeUrl ?? raw.youtube_url ?? raw.youtube },
-    { label: 'Blog', value: raw.blogUrl ?? raw.blog_url ?? raw.blog },
-    { label: 'Portfolio', value: raw.website ?? raw.websiteUrl ?? raw.website_url }
-  ]
-
-  const fromKnown = knownFields
-    .map(entry => {
-      const url = normalizeExternalUrl(pick(entry.value))
-      if (!url) return null
-      return { label: entry.label, url }
-    })
-    .filter((entry): entry is ProfileLink => Boolean(entry))
-
-  const rawSameAs = raw.sameAs ?? raw.same_as ?? raw.profileLinks ?? raw.profile_links
-  const fromSameAs: ProfileLink[] = []
-
-  if (Array.isArray(rawSameAs)) {
-    rawSameAs.forEach((entry, index) => {
-      const url = normalizeExternalUrl(pick(entry))
-      if (url) {
-        fromSameAs.push({ label: `Profile ${index + 1}`, url })
-      }
-    })
-  } else {
-    pick(rawSameAs)
-      .split(/\n|,/)
-      .map(part => normalizeExternalUrl(part.trim()))
-      .filter((url): url is string => Boolean(url))
-      .forEach((url, index) => {
-        fromSameAs.push({ label: `Profile ${index + 1}`, url })
-      })
-  }
-
-  const deduped = new Map<string, ProfileLink>()
-  ;[...fromKnown, ...fromSameAs].forEach(link => {
-    if (!deduped.has(link.url)) {
-      deduped.set(link.url, link)
-    }
-  })
-
-  return Array.from(deduped.values())
-}
-
-function normalizeExternalUrl(value: string): string | null {
-  if (!value) return null
-  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`
-  try {
-    const parsed = new URL(withProtocol)
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-      return null
-    }
-    return parsed.toString()
-  } catch {
-    return null
-  }
 }

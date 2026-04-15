@@ -1,5 +1,5 @@
 import { RouteObject } from 'react-router-dom'
-import Layout from './components/Layout'
+import Layout, { LayoutHydrateFallback } from './components/Layout'
 import NotFound from './pages/NotFound'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminLogin from './pages/admin/AdminLogin'
@@ -23,6 +23,7 @@ export const routes: RouteObject[] = [
       site: getPublicDoc('site')
     }),
     element: <Layout />,
+    hydrateFallbackElement: <LayoutHydrateFallback />,
     children: [
       {
         index: true,

@@ -12,6 +12,7 @@ import { useLanguage } from '../lib/language'
 import { trackOutboundProjectLink } from '../lib/analytics'
 import ProjectCoverMedia from '../components/ProjectCoverMedia'
 import { useSeo } from '../lib/seo'
+import { getLocalizedSiteName } from '../lib/site'
 import type { AppShellContext } from '../components/Layout'
 
 type ProjectsLoaderData = {
@@ -35,7 +36,7 @@ export function Component() {
   const { language } = useLanguage()
   const data = useLoaderData() as ProjectsLoaderData
   const { site } = useOutletContext<AppShellContext>()
-  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+  const displayName = getLocalizedSiteName(site, language)
 
   return (
     <Suspense fallback={<ProjectsSkeleton />}>
@@ -59,15 +60,15 @@ function ProjectsContent({
   displayName: string
 }) {
   const { items: projects, roleHeadline } = use(promise)
-  const curated = selectPortfolioProjects(projects, 4)
+  const curated = selectPortfolioProjects(projects, 3)
   const remainingIds = new Set(curated.map(project => project.id))
   const additional = prioritizeProjects(projects).filter(project => !remainingIds.has(project.id))
 
   useSeo({
-    title: `${displayName} | ${language === 'ja' ? 'プロジェクト' : 'Projects'}`,
+    title: `${displayName} | ${language === 'ja' ? '事例' : 'Case Studies'}`,
     description: language === 'ja'
-      ? 'バックエンド / プラットフォーム領域の実務ポートフォリオ。API、データシステム、CI/CD、クラウド運用、出荷済みプロダクトを扱います。'
-      : 'Professional portfolio covering backend/platform work across shipped products, APIs, data systems, CI/CD, and cloud operations.',
+      ? '実装 / 連携寄りのケーススタディ。課題、関わるシステム、バックエンド構成、運用結果が見える形で整理しています。'
+      : 'Implementation and integration case studies organized around the problem, systems involved, backend architecture, and operational result.',
     path: '/projects'
   })
 
@@ -75,8 +76,8 @@ function ProjectsContent({
     return (
       <section className="stack">
         <section className="card page-intro">
-          <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Projects'}</p>
-          <h1>{language === 'ja' ? 'プロジェクトは準備中です' : 'Projects are being prepared'}</h1>
+          <p className="eyebrow">{language === 'ja' ? '事例' : 'Case Studies'}</p>
+          <h1>{language === 'ja' ? 'ケーススタディは準備中です' : 'Case studies are being prepared'}</h1>
         </section>
       </section>
     )
@@ -85,19 +86,19 @@ function ProjectsContent({
   return (
     <article className="stack">
       <section className="card page-intro">
-        <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Projects'}</p>
-        <h1>{language === 'ja' ? '実務ポートフォリオ' : 'Professional portfolio'}</h1>
+        <p className="eyebrow">{language === 'ja' ? '事例' : 'Case Studies'}</p>
+        <h1>{language === 'ja' ? '実装 / 連携のケーススタディ' : 'Implementation and integration case studies'}</h1>
         <p className="lead-text">{localizedValue(roleHeadline, language)}</p>
         <p>
           {language === 'ja'
-            ? 'ここでは、Jaron Rosenau の公開プロジェクトを、システム設計、担当範囲、アーキテクチャ、運用シグナルが見える形で整理しています。'
-            : 'This page organizes public projects around the systems, architecture, delivery work, and operating signals behind them.'}
+            ? 'ここでは、公開プロジェクトを、課題、関わるシステム、連携 / バックエンド構成、運用結果が見える形で整理しています。'
+            : 'This page organizes public work around the problem, systems involved, integration and backend architecture, and the operational result.'}
         </p>
       </section>
       <section className="stack">
         <div className="section-heading">
-          <p className="eyebrow">{language === 'ja' ? '注目プロジェクト' : 'Featured projects'}</p>
-          <h2>{language === 'ja' ? '主なプロジェクト' : 'Portfolio highlights'}</h2>
+          <p className="eyebrow">{language === 'ja' ? '注目事例' : 'Featured case studies'}</p>
+          <h2>{language === 'ja' ? '主なケーススタディ' : 'Selected case studies'}</h2>
         </div>
         <div className="case-study-grid">
           {curated.map((project, index) => (
@@ -115,7 +116,7 @@ function ProjectsContent({
         <section className="stack">
           <div className="section-heading">
             <p className="eyebrow">{language === 'ja' ? '補足' : 'Additional work'}</p>
-            <h2>{language === 'ja' ? '他の公開プロジェクト' : 'Other public repositories'}</h2>
+            <h2>{language === 'ja' ? '他の公開事例 / リポジトリ' : 'Other public case studies and repositories'}</h2>
           </div>
           <ul className="cards compact-cards">
             {additional.map(project => {
@@ -133,7 +134,7 @@ function ProjectsContent({
                   <p>{summary}</p>
                   <div className="project-actions">
                     <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button ghost" prefetch="intent">
-                      {language === 'ja' ? '詳細' : 'Details'}
+                      {language === 'ja' ? '事例を見る' : 'View case study'}
                     </Link>
                     {project.repo && (
                       <a href={project.repo} target="_blank" rel="noopener noreferrer" className="button ghost">
@@ -176,7 +177,7 @@ function CaseStudyCard({
   const narrative = projectNarrative(project)
   const summary = localizedValue(narrative.summary, language)
   const problem = localizedValue(narrative.problem, language)
-  const owned = localizedValue(narrative.owned, language)
+  const systems = localizedValue(narrative.systems, language)
   const architecture = localizedValue(narrative.architecture, language)
   const result = localizedValue(narrative.result, language)
 
@@ -193,7 +194,7 @@ function CaseStudyCard({
         </div>
       )}
       <div className="card-body">
-        <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Project'}</p>
+        <p className="eyebrow">{language === 'ja' ? '事例' : 'Case Study'}</p>
         <h2>
           <Link to={`/projects/${encodeURIComponent(project.id)}`} prefetch="intent">
             {title}
@@ -203,19 +204,19 @@ function CaseStudyCard({
       </div>
       <dl className="detail-grid">
         <div>
-          <dt>{language === 'ja' ? '問題設定' : 'Problem'}</dt>
+          <dt>{language === 'ja' ? '課題' : 'Problem'}</dt>
           <dd>{problem}</dd>
         </div>
         <div>
-          <dt>{language === 'ja' ? '担当範囲' : 'Owned directly'}</dt>
-          <dd>{owned}</dd>
+          <dt>{language === 'ja' ? '関わるシステム' : 'Systems involved'}</dt>
+          <dd>{systems}</dd>
         </div>
         <div>
-          <dt>{language === 'ja' ? 'スタック / 構成' : 'Architecture / stack'}</dt>
+          <dt>{language === 'ja' ? '連携 / バックエンド構成' : 'Integration / backend architecture'}</dt>
           <dd>{architecture}</dd>
         </div>
         <div>
-          <dt>{language === 'ja' ? '結果 / 運用シグナル' : 'Result / signal'}</dt>
+          <dt>{language === 'ja' ? '運用結果' : 'Operational result'}</dt>
           <dd>{result}</dd>
         </div>
       </dl>
@@ -224,7 +225,7 @@ function CaseStudyCard({
       )}
       <div className="project-actions">
         <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button ghost" prefetch="intent">
-          {language === 'ja' ? '詳細ページ' : 'Project page'}
+          {language === 'ja' ? '事例を見る' : 'View case study'}
         </Link>
         {project.url && (
           <a

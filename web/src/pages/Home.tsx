@@ -2,14 +2,18 @@ import { Link, useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
 import { getPublicDoc, listProjects, type LocalizedText, type ProjectRecord } from '../lib/content'
 import {
+  HOME_PROOF_POINTS,
+  HOW_I_WORK_STEPS,
+  INTEGRATION_AUTOMATION_ITEMS,
   localizedValue,
   projectNarrative,
   resolveSharedProfileCopy,
   selectFeaturedProjects
 } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
-import type { AppShellContext, ProfileLink } from '../components/Layout'
 import { absoluteSiteUrl, useSeo } from '../lib/seo'
+import { getLocalizedSiteName, normalizeExternalUrl, type ProfileLink } from '../lib/site'
+import type { AppShellContext } from '../components/Layout'
 
 type HomeLink = {
   label: string
@@ -66,10 +70,16 @@ function HomeContent({
   site: AppShellContext['site']
 }) {
   const copy = use(promise)
-  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+  const displayName = getLocalizedSiteName(site, language)
   const headline = localizedValue(copy.headline, language)
   const supporting = localizedValue(copy.supporting, language)
   const specialty = localizedValue(copy.secondarySpecialization, language)
+  const proofPoints = language === 'ja' ? HOME_PROOF_POINTS.ja : HOME_PROOF_POINTS.en
+  const workflowSteps = HOW_I_WORK_STEPS.map(step => ({
+    title: localizedValue(step.title, language),
+    body: localizedValue(step.body, language)
+  }))
+  const integrationItems = language === 'ja' ? INTEGRATION_AUTOMATION_ITEMS.ja : INTEGRATION_AUTOMATION_ITEMS.en
   const ctas = buildHomeCtas(copy, site, language)
   const sameAs = buildHomeSameAs(copy, site, language)
   const featuredProjects = selectFeaturedProjects(copy.projects, copy.featuredProjectIds, 3)
@@ -96,7 +106,6 @@ function HomeContent({
         <div className="hero-kicker">{displayName}</div>
         <h1>{headline}</h1>
         <p className="hero-support">{supporting}</p>
-        <p className="hero-secondary">{specialty}</p>
         <nav className="cta-row" aria-label={language === 'ja' ? '主要アクション' : 'Primary actions'}>
           {ctas.map(link => (
             isInternalHref(link.url)
@@ -120,10 +129,46 @@ function HomeContent({
         </nav>
       </section>
 
+      <section className="proof-point-grid" aria-label={language === 'ja' ? '実績の要点' : 'Proof points'}>
+        {proofPoints.map(point => (
+          <article key={point} className="mini-card proof-point-card">
+            <p>{point}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="card">
+        <div className="section-heading">
+          <p className="eyebrow">{language === 'ja' ? '進め方' : 'How I Work'}</p>
+          <h2>{language === 'ja' ? 'How I Work' : 'How I Work'}</h2>
+        </div>
+        <div className="workflow-grid">
+          {workflowSteps.map(step => (
+            <article key={step.title} className="mini-card workflow-card">
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="section-heading">
+          <p className="eyebrow">{language === 'ja' ? '連携 / 自動化' : 'Integration / Automation'}</p>
+          <h2>{language === 'ja' ? '対応領域' : 'What I handle'}</h2>
+        </div>
+        <ul className="integration-list">
+          {integrationItems.map(item => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <p className="hero-secondary">{specialty}</p>
+      </section>
+
       <section className="proof-section">
         <div className="section-heading">
-          <p className="eyebrow">{language === 'ja' ? 'ポートフォリオ' : 'Portfolio'}</p>
-          <h2>{language === 'ja' ? '主なプロジェクト' : 'Selected projects'}</h2>
+          <p className="eyebrow">{language === 'ja' ? '事例' : 'Case Studies'}</p>
+          <h2>{language === 'ja' ? '主なケーススタディ' : 'Selected case studies'}</h2>
         </div>
         <div className="proof-grid">
           {featuredProjects.map(project => {
@@ -131,7 +176,7 @@ function HomeContent({
             const title = localizedValue(project.title, language, project.id)
             const summary = localizedValue(narrative.summary, language)
             const problem = localizedValue(narrative.problem, language)
-            const owned = localizedValue(narrative.owned, language)
+            const systems = localizedValue(narrative.systems, language)
             const architecture = localizedValue(narrative.architecture, language)
             const result = localizedValue(narrative.result, language)
             const tags = language === 'ja'
@@ -150,19 +195,19 @@ function HomeContent({
                 </div>
                 <dl className="detail-grid">
                   <div>
-                    <dt>{language === 'ja' ? '用途' : 'Use case'}</dt>
+                    <dt>{language === 'ja' ? '課題' : 'Problem'}</dt>
                     <dd>{problem}</dd>
                   </div>
                   <div>
-                    <dt>{language === 'ja' ? '担当範囲' : 'Owned directly'}</dt>
-                    <dd>{owned}</dd>
+                    <dt>{language === 'ja' ? '関わるシステム' : 'Systems involved'}</dt>
+                    <dd>{systems}</dd>
                   </div>
                   <div>
-                    <dt>{language === 'ja' ? 'アーキテクチャ' : 'Architecture'}</dt>
+                    <dt>{language === 'ja' ? '連携 / バックエンド構成' : 'Integration / backend architecture'}</dt>
                     <dd>{architecture}</dd>
                   </div>
                   <div>
-                    <dt>{language === 'ja' ? '信頼性シグナル' : 'Credibility signal'}</dt>
+                    <dt>{language === 'ja' ? '運用結果' : 'Operational result'}</dt>
                     <dd>{result}</dd>
                   </div>
                 </dl>
@@ -171,7 +216,7 @@ function HomeContent({
                 )}
                 <div className="project-actions">
                   <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button ghost" prefetch="intent">
-                    {language === 'ja' ? 'プロジェクトを見る' : 'View project'}
+                    {language === 'ja' ? '事例を見る' : 'View case study'}
                   </Link>
                   {project.url && (
                     <a href={project.url} target="_blank" rel="noopener noreferrer" className="button secondary">
@@ -270,7 +315,7 @@ function buildHomeCtas(copy: HomeCopy, site: AppShellContext['site'], language: 
       url: '/resume'
     },
     {
-      label: language === 'ja' ? 'プロジェクト' : 'Projects',
+      label: language === 'ja' ? '事例' : 'Case Studies',
       url: '/projects'
     },
     {
@@ -301,17 +346,6 @@ function buildHomeSameAs(copy: HomeCopy, site: AppShellContext['site'], language
 
 function isInternalHref(value: string) {
   return value.startsWith('/')
-}
-
-function normalizeExternalUrl(value: string) {
-  if (!value || isInternalHref(value)) return null
-  try {
-    const parsed = new URL(value)
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
-    return parsed.toString()
-  } catch {
-    return null
-  }
 }
 
 function HomeSkeleton() {

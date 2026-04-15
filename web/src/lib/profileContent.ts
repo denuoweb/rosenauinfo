@@ -19,6 +19,11 @@ export type ResumeSection = {
   items: LocalizedList
 }
 
+export type WorkStep = {
+  title: LocalizedText
+  body: LocalizedText
+}
+
 export type SharedProfileCopy = {
   headline: LocalizedText
   supporting: LocalizedText
@@ -31,24 +36,25 @@ export type ProjectNarrative = {
   featured: boolean
   summary: LocalizedText
   problem: LocalizedText
+  systems: LocalizedText
   owned: LocalizedText
   architecture: LocalizedText
   result: LocalizedText
 }
 
 export const CORE_ROLE_HEADLINE: LocalizedText = {
-  en: 'Backend / Platform Engineer shipping data-rich web products end-to-end.',
-  ja: 'データリッチな Web プロダクトをエンドツーエンドで届ける Backend / Platform Engineer。'
+  en: 'Implementation / Integration Engineer',
+  ja: '実装 / 連携エンジニア'
 }
 
 export const CORE_SUPPORTING_COPY: LocalizedText = {
-  en: 'I build and operate Python/TypeScript systems across APIs, data workflows, CI/CD, cloud infrastructure, and user-facing web products.',
-  ja: 'API、データワークフロー、CI/CD、クラウド基盤、ユーザー向け Web プロダクトまで、Python / TypeScript のシステムを構築・運用しています。'
+  en: 'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.',
+  ja: '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。'
 }
 
 export const SECONDARY_SPECIALIZATION: LocalizedText = {
-  en: 'Secondary focus: geospatial, civic, and research-adjacent systems where maps, sensors, or field data are part of the product.',
-  ja: '副次的な専門領域は、地図、センサー、フィールドデータが関わる地理空間・シビック・リサーチ隣接のシステムです。'
+  en: 'AI-assisted development with GPT/Codex is an execution accelerator I use for implementation speed, debugging, and documentation, not the headline value I lead with.',
+  ja: 'GPT/Codex を使った AI 支援開発は、実装速度、デバッグ、ドキュメント整備を高めるための加速手段であり、主役として前面に出す価値ではありません。'
 }
 
 export const DEFAULT_PROFILE_LINKS = [
@@ -58,93 +64,251 @@ export const DEFAULT_PROFILE_LINKS = [
 
 const pick = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
+const LEGACY_COPY_PATTERNS = [
+  /backend\s*\/\s*platform engineer/i,
+  /data-rich web products?/i,
+  /backend\/platform center of gravity/i,
+  /geospatial,\s*civic,\s*and research-adjacent/i,
+  /maps?,\s*sensors?,\s*or field data/i,
+  /データリッチ/i,
+  /バックエンド\s*\/\s*プラットフォーム/i,
+  /地理空間|シビック|研究隣接|研究周辺/i
+]
+
+function isLegacyProfileCopy(value: string) {
+  const trimmed = value.trim()
+  return trimmed
+    ? LEGACY_COPY_PATTERNS.some(pattern => pattern.test(trimmed))
+    : false
+}
+
+export function sanitizeProfileText(value: string, fallback: string) {
+  const trimmed = value.trim()
+  if (!trimmed || isLegacyProfileCopy(trimmed)) {
+    return fallback
+  }
+  return trimmed
+}
+
+export function sanitizeProfileItems(items: string[], fallback: string[]) {
+  const cleaned = items
+    .map(item => item.trim())
+    .filter(item => item && !isLegacyProfileCopy(item))
+
+  return cleaned.length > 0
+    ? Array.from(new Set(cleaned))
+    : [...fallback]
+}
+
+export const HOME_PROOF_POINTS: LocalizedList = {
+  en: [
+    'APIs, auth, webhooks, SQL, cloud operations',
+    'End-to-end delivery: scope, build, deploy, troubleshoot',
+    'Public products and operational tooling shipped in production'
+  ],
+  ja: [
+    'API、認証、Webhook、SQL、クラウド運用',
+    'スコープ整理から構築、デプロイ、トラブルシュートまで',
+    '公開プロダクトと運用ツールを本番で出荷'
+  ]
+}
+
+export const HOW_I_WORK_STEPS: WorkStep[] = [
+  {
+    title: {
+      en: 'Discover',
+      ja: 'Discover'
+    },
+    body: {
+      en: 'Clarify requirements and system boundaries.',
+      ja: '要件とシステム境界を明確にする。'
+    }
+  },
+  {
+    title: {
+      en: 'Integrate',
+      ja: 'Integrate'
+    },
+    body: {
+      en: 'Connect APIs, auth, and data flows.',
+      ja: 'API、認証、データフローを接続する。'
+    }
+  },
+  {
+    title: {
+      en: 'Operate',
+      ja: 'Operate'
+    },
+    body: {
+      en: 'Deploy, monitor, troubleshoot, and document.',
+      ja: 'デプロイ、監視、トラブルシュート、ドキュメント化を行う。'
+    }
+  },
+  {
+    title: {
+      en: 'Improve',
+      ja: 'Improve'
+    },
+    body: {
+      en: 'Tighten the workflow after real use.',
+      ja: '実運用の後でワークフローを締める。'
+    }
+  }
+]
+
+export const INTEGRATION_AUTOMATION_ITEMS: LocalizedList = {
+  en: [
+    'API integration',
+    'Webhook consumers and producers',
+    'Background processing',
+    'SQL and data validation',
+    'Cloud-hosted services',
+    'Debugging production data and auth issues',
+    'AI-assisted development with GPT/Codex for implementation speed, debugging, and documentation'
+  ],
+  ja: [
+    'API 連携',
+    'Webhook の consumer / producer 実装',
+    'バックグラウンド処理',
+    'SQL とデータバリデーション',
+    'クラウドホスト型サービス',
+    '本番データと認証まわりの不具合調査',
+    '実装速度、デバッグ、ドキュメント整備を高めるための GPT/Codex を使った AI 支援開発'
+  ]
+}
+
 const PROJECT_NARRATIVES: Record<string, ProjectNarrative> = {
   crowdpmplatform: {
     key: 'crowdpmplatform',
-    priority: 1,
+    priority: 3,
     featured: true,
     summary: {
-      en: 'Civic sensor-data platform for secure ingest, calibrated storage, and WebGL air-quality mapping.',
-      ja: 'セキュアな ingest、校正済み保存、WebGL マッピングを備えた civic sensor-data platform。'
+      en: 'Secure ingest and monitoring platform connecting device auth, partner APIs, calibrated processing, and operator-facing mapping.',
+      ja: 'デバイス認証、外部 API、校正処理、運用向けマッピングをつなぐセキュアな ingest / 監視プラットフォーム。'
     },
     problem: {
-      en: 'Crowd-sourced PM2.5 monitoring needs a secure ingest path, calibrated storage, and a map that turns sensor batches into something operators can use.',
-      ja: 'crowd-sourced PM2.5 監視では、セキュアな ingest、校正済み保存、そしてセンサーバッチを運用画面に変える地図 UI が必要になる。'
+      en: 'Air-quality monitoring needed a working path from device activation through secure ingest, calibrated storage, and an operator-facing map.',
+      ja: '空気質監視には、デバイス有効化からセキュアな ingest、校正済み保存、運用者向け地図までつながる仕組みが必要だった。'
+    },
+    systems: {
+      en: 'Device activation, MFA approval, DPoP-bound ingest, partner API routes, calibrated storage, Firestore buckets, and a React/WebGL operations surface.',
+      ja: 'デバイス有効化、MFA 承認、DPoP 付き ingest、外部 API、校正済み保存、Firestore bucket、React/WebGL の運用画面。'
     },
     owned: {
-      en: 'Led platform architecture across secure ingest, calibrated processing, API design, deployment workflow, and the React mapping surface.',
-      ja: 'セキュアな ingest、校正済み処理、API 設計、デプロイワークフロー、React ベースの地図 UI まで、プラットフォーム設計を主導。'
+      en: 'Technical discovery, platform architecture, API design, deployment workflow, mapping client delivery, and end-to-end demo operations.',
+      ja: '技術調査、プラットフォーム設計、API 設計、デプロイ導線、地図クライアント実装、デモ運用まで担当。'
     },
     architecture: {
-      en: 'Firebase Cloud Functions, Fastify, Cloud Storage, Firestore hourly buckets, DPoP-bound ingest, React 19, deck.gl, Google Maps WebGL, GitHub Actions.',
-      ja: 'Firebase Cloud Functions、Fastify、Cloud Storage、Firestore の hourly bucket、DPoP 連携 ingest、React 19、deck.gl、Google Maps WebGL、GitHub Actions。'
+      en: 'Fastify on Firebase Cloud Functions, Cloud Storage, Firestore hourly buckets, React 19, deck.gl, Google Maps WebGL, and GitHub Actions.',
+      ja: 'Firebase Cloud Functions 上の Fastify、Cloud Storage、Firestore の hourly bucket、React 19、deck.gl、Google Maps WebGL、GitHub Actions。'
     },
     result: {
-      en: 'Live demo with documented device activation, MFA approval, partner-facing API routes, and an end-to-end path from sensor payloads to map layers.',
-      ja: 'デバイス有効化、MFA 承認、外部向け API、センサーペイロードから地図レイヤーまでの end-to-end パイプラインを備えた live demo を公開。'
+      en: 'Live demo with documented auth and approval flows, partner-facing routes, and an end-to-end path from sensor payloads to map layers.',
+      ja: '認証と承認フロー、外部向けルート、センサーペイロードから地図レイヤーまでの経路を備えた live demo を公開。'
     }
   },
   questbycycle: {
     key: 'questbycycle',
+    priority: 1,
+    featured: true,
+    summary: {
+      en: 'Public Flask/PostgreSQL system covering auth, background jobs, deployment, and production support for a cycling platform.',
+      ja: '認証、バックグラウンドジョブ、デプロイ、本番サポートまで含む Flask / PostgreSQL の公開システム。'
+    },
+    problem: {
+      en: 'Cycling program operators needed a public system that could turn missions, proof submission, badges, and leaderboards into a repeatable operational program.',
+      ja: 'サイクリング施策の運営側には、ミッション、証跡投稿、バッジ、リーダーボードを運用可能な仕組みにする公開システムが必要だった。'
+    },
+    systems: {
+      en: 'Public-facing Flask/PostgreSQL app, account/auth flows, RQ background jobs, notifications, admin operations, and deployment/monitoring paths.',
+      ja: '公開向け Flask/PostgreSQL アプリ、認証フロー、RQ バックグラウンドジョブ、通知、管理運用導線、デプロイ / 監視。'
+    },
+    owned: {
+      en: 'Technical discovery, data model, backend services, frontend delivery, infrastructure provisioning, and post-launch production troubleshooting.',
+      ja: '技術調査、データモデル、バックエンド、フロントエンド、本番基盤、公開後の本番トラブル対応まで担当。'
+    },
+    architecture: {
+      en: 'Flask, PostgreSQL, SQLAlchemy, Redis/RQ workers, Vite frontend, Gunicorn, NGINX, Terraform, Ansible, Poetry, and pytest.',
+      ja: 'Flask、PostgreSQL、SQLAlchemy、Redis / RQ ワーカー、Vite フロントエンド、Gunicorn、NGINX、Terraform、Ansible、Poetry、pytest。'
+    },
+    result: {
+      en: 'Pilot operations with 100+ users, live production deployment, and production issues handled after launch across auth, jobs, notifications, and user support.',
+      ja: '100 人超の利用を含む pilot 運用、本番公開、そして認証・ジョブ・通知・利用者対応まで含む公開後の本番トラブル対応。'
+    }
+  },
+  moonshineart: {
+    key: 'moonshineart',
     priority: 2,
     featured: true,
     summary: {
-      en: 'Live Flask/Postgres product that turns cycling missions, proof submission, and leaderboards into a public web platform.',
-      ja: 'サイクリングのミッション、証跡投稿、リーダーボードを public web product にまとめた Flask / Postgres プロダクト。'
+      en: 'Workflow and integration system for artist onboarding, checkout, fulfillment, and operational automation.',
+      ja: 'アーティスト登録、購入、発送、運用自動化をつなぐワークフロー / 連携システム。'
     },
     problem: {
-      en: 'Cycling communities needed a product that could turn missions, proof submission, badges, and leaderboards into sustained participation.',
-      ja: 'サイクリングコミュニティには、ミッション、証跡投稿、バッジ、リーダーボードを継続参加につなげるプロダクトが必要だった。'
+      en: 'The business needed onboarding, order handling, and fulfillment to behave like one reliable workflow instead of a loose collection of manual steps.',
+      ja: '登録、受注、発送を、ばらばらな手作業ではなく、一貫したワークフローとして機能させる必要があった。'
+    },
+    systems: {
+      en: 'Artist onboarding, checkout and fulfillment flow, operational automation, and Firebase/Cloud Run backend integration points.',
+      ja: 'アーティスト登録、購入 / 発送フロー、運用自動化、Firebase / Cloud Run のバックエンド連携ポイント。'
     },
     owned: {
-      en: 'Built and operated the web product end-to-end, including backend services, background jobs, data model, frontend delivery, and production provisioning.',
-      ja: 'バックエンド、バックグラウンドジョブ、データモデル、フロントエンド、本番基盤まで、プロダクトを end-to-end で構築・運用。'
+      en: 'Integration design, backend implementation, workflow automation, and the operational path needed to keep the flow moving.',
+      ja: '連携設計、バックエンド実装、ワークフロー自動化、運用導線の整備を担当。'
     },
     architecture: {
-      en: 'Flask, PostgreSQL, SQLAlchemy, Redis/RQ workers, Vite frontend, Gunicorn, NGINX, Poetry, pytest, Terraform, Ansible.',
-      ja: 'Flask、PostgreSQL、SQLAlchemy、Redis / RQ ワーカー、Vite フロントエンド、Gunicorn、NGINX、Poetry、pytest、Terraform、Ansible。'
+      en: 'Firebase and Cloud Run services coordinating onboarding data, commerce flow, fulfillment state, and operational handoffs.',
+      ja: 'Firebase と Cloud Run を使い、登録データ、購入フロー、発送状態、運用ハンドオフを連携させる構成。'
     },
     result: {
-      en: 'Live at questbycycle.org with production infrastructure, background processing, and user-facing features spanning leaderboards, PWA flows, and notifications.',
-      ja: 'questbycycle.org で live 運用されており、本番基盤、バックグラウンド処理、リーダーボード、PWA、通知などの機能を提供。'
+      en: 'Reframed a storefront as an operational system with clearer handoffs, less manual coordination, and repeatable backend workflow.',
+      ja: 'ストアを単なる見せ方ではなく、引き継ぎが明確で手作業が減る、再現可能なバックエンドワークフローとして整えた。'
     }
   },
   arm64adk: {
     key: 'arm64adk',
-    priority: 3,
-    featured: true,
+    priority: 4,
+    featured: false,
     summary: {
-      en: 'Rust/gRPC toolkit platform that brings packaged Android development workflows to Linux ARM64.',
-      ja: 'Linux ARM64 にパッケージ化された Android 開発ワークフローを持ち込む Rust / gRPC ツールキット基盤。'
+      en: 'Operational developer toolkit case study focused on workflow orchestration, packaging, and supportable tooling for Linux ARM64.',
+      ja: 'Linux ARM64 向けに、ワークフロー制御、配布、保守しやすさを重視した開発ツールケーススタディ。'
     },
     problem: {
-      en: 'Android development on Linux ARM64 still lacks first-class tooling when teams need packaging, workflows, and observability instead of ad hoc scripts.',
-      ja: 'Linux ARM64 上の Android 開発では、場当たり的なスクリプトではなく、パッケージング、ワークフロー、可観測性を備えたツールが不足している。'
+      en: 'Android development on Linux ARM64 needed a supportable workflow with packaging, orchestration, and observability instead of ad hoc scripts.',
+      ja: 'Linux ARM64 上の Android 開発には、場当たり的なスクリプトではなく、配布、ワークフロー制御、可観測性を備えた仕組みが必要だった。'
+    },
+    systems: {
+      en: 'GTK UI, CLI client, gRPC services, workflow jobs, package distribution, and observability around Android toolchain tasks.',
+      ja: 'GTK UI、CLI、gRPC サービス、ワークフロージョブ、パッケージ配布、Android toolchain 作業の可観測性。'
     },
     owned: {
-      en: 'Built the toolkit platform directly, shipping the service architecture, GTK UI, CLI, release packaging, and workflow around toolchains and builds.',
-      ja: 'サービス構成、GTK UI、CLI、リリースパッケージング、toolchain と build のワークフローを含めて、ツールキット基盤を直接構築。'
+      en: 'Designed and built the service architecture, GTK UI, CLI, packaging, and workflow orchestration around builds and releases.',
+      ja: 'サービス構成、GTK UI、CLI、パッケージング、ビルド / リリースのワークフロー制御を設計・実装。'
     },
     architecture: {
-      en: 'Rust workspace with 12 crates, gRPC services, GTK4 UI, CLI client, JobService event bus, workflow/build/observe services, packaged Linux ARM64 releases.',
+      en: 'Rust workspace with 12 crates, gRPC services, GTK4 UI, CLI client, JobService event bus, workflow/build/observe services, and packaged Linux ARM64 releases.',
       ja: '12 クレートの Rust workspace、gRPC サービス、GTK4 UI、CLI、JobService event bus、workflow/build/observe サービス、Linux ARM64 向けパッケージ配布。'
     },
     result: {
-      en: 'Public release with packaged artifacts, a repo-hosted UI demo, and a focused open-source platform for Linux ARM64 Android development.',
-      ja: '公開リリース、配布パッケージ、repo 上の UI デモを備えた Linux ARM64 向け Android 開発のオープンソース基盤。'
+      en: 'Public release with packaged artifacts, a repo-hosted UI demo, and a repeatable workflow for Linux ARM64 Android development.',
+      ja: '配布パッケージ、repo 上の UI デモ、Linux ARM64 向け Android 開発の再現可能なワークフローを備えた公開リリース。'
     }
   },
   dripcopy: {
     key: 'dripcopy',
-    priority: 4,
+    priority: 5,
     featured: false,
     summary: {
-      en: 'Recovery-focused Linux utility for copying optical media on unstable low-power USB hosts.',
-      ja: '不安定な低電力 USB ホストで光学メディアを扱うための recovery-focused Linux utility。'
+      en: 'Operational utility that turns fragile media-copying work into a resumable Linux workflow.',
+      ja: '壊れやすいメディアコピー作業を再開可能な Linux ワークフローに変える運用ユーティリティ。'
     },
     problem: {
       en: 'Copying optical media on low-power USB hosts can brown out the drive, reset the bus, and corrupt long-running transfers.',
       ja: '低電力 USB ホストで光学メディアをコピーすると、電圧低下でドライブや USB バスがリセットされ、長時間の転送が壊れやすい。'
+    },
+    systems: {
+      en: 'USB storage, retry/remount handling, rate-limited transfer, resumable outputs, and structured logging around unreliable hardware.',
+      ja: 'USB ストレージ、不安定なハードウェア向けの retry/remount、速度制御転送、再開可能な出力、構造化ログ。'
     },
     owned: {
       en: 'Built the recovery-focused utility and the operational logic around retries, remounts, resumable output, and logging.',
@@ -163,8 +327,8 @@ const PROJECT_NARRATIVES: Record<string, ProjectNarrative> = {
 
 export const ABOUT_DEFAULTS = {
   intro: {
-    en: 'I design, build, deploy, and operate data-rich web products with a backend/platform center of gravity. Most of my work sits where product delivery meets infrastructure: APIs, data pipelines, CI/CD, Linux/cloud operations, and the user-facing surfaces that depend on them.',
-    ja: 'バックエンド / プラットフォームを軸に、データリッチな Web プロダクトを設計・実装・デプロイ・運用しています。主戦場は、API、データパイプライン、CI/CD、Linux / クラウド運用、そしてそれらに依存するユーザー向け画面が交わる領域です。'
+    en: 'I work as a technical delivery partner on messy implementation problems where requirements, APIs, auth, operations, and production support all need to line up.',
+    ja: '要件、API、認証、運用、本番サポートを一つの delivery としてそろえる必要がある、複雑な実装案件で力を発揮します。'
   },
   sections: [
     {
@@ -175,53 +339,64 @@ export const ABOUT_DEFAULTS = {
       },
       items: {
         en: [
-          'Build Python and TypeScript systems across APIs, background jobs, storage, and web apps.',
-          'Own delivery from implementation through CI/CD, deploys, monitoring, and iteration.',
-          'Use infrastructure and operations as part of product delivery rather than a separate handoff.'
+          'Build API-first integrations, automations, and backend systems in Python and TypeScript.',
+          'Carry delivery from technical discovery through implementation, deployment, and production support.',
+          'Treat auth, data validation, cloud operations, and troubleshooting as part of the job, not a separate handoff.'
         ],
         ja: [
-          'API、バックグラウンドジョブ、ストレージ、Web アプリをまたぐ Python / TypeScript システムを構築する。',
-          '実装から CI/CD、デプロイ、監視、改善まで一気通貫で担当する。',
-          'インフラや運用を別工程ではなく、プロダクト delivery の一部として扱う。'
+          'API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築する。',
+          '技術調査から実装、デプロイ、本番サポートまで一気通貫で担当する。',
+          '認証、データバリデーション、クラウド運用、トラブル対応を別工程ではなく delivery の一部として扱う。'
         ]
       }
     },
     {
       id: 'what-ive-shipped',
       title: {
-        en: "What I've shipped",
-        ja: '何を出荷してきたか'
+        en: 'Selected delivery examples',
+        ja: '主な delivery 事例'
       },
       items: {
         en: [
-          'QuestByCycle, a live Flask/Postgres product with background jobs and production provisioning.',
-          'CrowdPM Platform, a civic air-quality stack spanning secure ingest, calibrated data processing, and WebGL mapping.',
-          'Open-source tooling including ARM64-ADK and DripCopy for Linux and developer-platform workflows.'
+          'QuestByCycle: public Flask/PostgreSQL system with auth, background jobs, deployment, and post-launch support.',
+          'CrowdPM Platform: secure ingest, auth, partner APIs, data processing, and operator-facing monitoring in one cloud-hosted system.',
+          'Public tooling and operational utilities shipped around real constraints, including Linux workflows and developer tooling.'
         ],
         ja: [
-          'QuestByCycle: バックグラウンドジョブと本番基盤を含む、Flask / Postgres の live product。',
-          'CrowdPM Platform: セキュアな ingest、校正済みデータ処理、WebGL マッピングを備えた civic air-quality stack。',
-          'ARM64-ADK や DripCopy など、Linux と developer-platform workflow に関するオープンソースツール。'
+          'QuestByCycle: 認証、バックグラウンドジョブ、デプロイ、公開後サポートまで含む Flask / PostgreSQL の公開システム。',
+          'CrowdPM Platform: セキュアな ingest、認証、外部 API、データ処理、運用向け監視画面を一つにつないだクラウドホスト型システム。',
+          'Linux のワークフローや開発者向けツールを含む、実際の制約に向き合った公開ツールと運用ユーティリティ。'
         ]
       }
     },
     {
       id: 'what-i-work-well-on',
       title: {
-        en: 'What I work well on',
-        ja: '得意な仕事'
+        en: 'How I work',
+        ja: '進め方'
       },
       items: {
         en: [
-          'Backend and platform work for products with real operational constraints.',
-          'APIs, auth, data workflows, CI/CD, Linux, and cloud infrastructure.',
-          'Geospatial, civic, and research-adjacent systems when maps, sensors, or structured field data matter.'
+          'Discover: clarify requirements, system boundaries, and failure points before code becomes expensive.',
+          'Integrate: connect APIs, auth flows, data models, and background processing into one working path.',
+          'Operate: deploy, monitor, troubleshoot, document, and keep the system usable after launch.'
         ],
         ja: [
-          '実運用上の制約があるプロダクトに対するバックエンド / プラットフォーム開発。',
-          'API、認証、データワークフロー、CI/CD、Linux、クラウド基盤。',
-          '地図、センサー、構造化フィールドデータが重要な地理空間・シビック・リサーチ隣接のシステム。'
+          'Discover: コード変更が高くつく前に、要件、境界、壊れやすい点を明確にする。',
+          'Integrate: API、認証フロー、データモデル、バックグラウンド処理を一つの経路にまとめる。',
+          'Operate: デプロイ、監視、トラブルシュート、ドキュメント化を行い、公開後も使える状態を保つ。'
         ]
+      }
+    },
+    {
+      id: 'integration-automation',
+      title: {
+        en: 'Integration / Automation',
+        ja: '連携 / 自動化'
+      },
+      items: {
+        en: [...INTEGRATION_AUTOMATION_ITEMS.en],
+        ja: [...INTEGRATION_AUTOMATION_ITEMS.ja]
       }
     }
   ] as AboutSection[]
@@ -230,12 +405,12 @@ export const ABOUT_DEFAULTS = {
 export const RESUME_DEFAULTS = {
   summary: {
     en: [
-      'Backend / Platform Engineer shipping data-rich web products end-to-end.',
-      'I build and operate Python/TypeScript systems across APIs, data workflows, CI/CD, Linux/cloud infrastructure, and user-facing web products. My strongest work sits where backend systems, platform ownership, and shipped product delivery meet.'
+      'Implementation / Integration Engineer.',
+      'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.'
     ],
     ja: [
-      'データリッチな Web プロダクトを end-to-end で届ける Backend / Platform Engineer。',
-      'API、データワークフロー、CI/CD、Linux / クラウド基盤、ユーザー向け Web プロダクトまで、Python / TypeScript のシステムを構築・運用しています。バックエンド、プラットフォーム責任、そして実際に出荷されるプロダクト delivery が交わる領域が最も強いです。'
+      '実装 / 連携エンジニア。',
+      '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。'
     ]
   },
   sections: [
@@ -247,53 +422,64 @@ export const RESUME_DEFAULTS = {
       },
       items: {
         en: [
-          'Backend/platform engineering with Python and TypeScript.',
-          'APIs, auth flows, data systems, background processing, and operational tooling.',
-          'CI/CD, Linux administration, cloud deployment, and production iteration.'
+          'API integration, auth flows, webhooks, background processing, SQL, data validation, and cloud-hosted services.',
+          'Python and TypeScript delivery across backend services, operational tooling, and public web products.',
+          'Production troubleshooting, deployment, monitoring, and documentation after launch.'
         ],
         ja: [
-          'Python / TypeScript を軸にした backend / platform engineering。',
-          'API、認証フロー、データシステム、バックグラウンド処理、運用ツール。',
-          'CI/CD、Linux 運用、クラウドデプロイ、本番改善。'
+          'API 連携、認証フロー、Webhook、バックグラウンド処理、SQL、データバリデーション、クラウドホスト型サービス。',
+          'バックエンドサービス、運用ツール、公開 Web プロダクトにまたがる Python / TypeScript の delivery。',
+          '公開後の本番トラブル対応、デプロイ、監視、ドキュメント整備。'
         ]
       }
     },
     {
       id: 'selected-systems',
       title: {
-        en: 'Selected shipped systems',
-        ja: '主な shipped systems'
+        en: 'Selected delivery examples',
+        ja: '主な delivery 事例'
       },
       items: {
         en: [
-          'QuestByCycle: built and operated a live Flask/Postgres web product with background jobs and production infrastructure.',
-          'CrowdPM Platform: led platform architecture for secure civic-data ingest, calibrated processing, a Fastify API, and WebGL mapping.',
-          'ARM64-ADK and DripCopy: shipped developer tooling and Linux utilities built around real platform constraints.'
+          'QuestByCycle: public Flask/PostgreSQL system with auth, background jobs, deployment, and production support.',
+          'CrowdPM Platform: secure ingest, auth, partner APIs, data processing, and operator-facing monitoring in one cloud-hosted system.',
+          'Operational tooling shipped around real constraints, including Linux workflows and developer-platform utilities.'
         ],
         ja: [
-          'QuestByCycle: バックグラウンドジョブと本番基盤を備えた live Flask / Postgres web product を構築・運用。',
-          'CrowdPM Platform: セキュアな civic-data ingest、校正処理、Fastify API、WebGL マッピングのプラットフォーム設計を主導。',
-          'ARM64-ADK と DripCopy: 実際の platform 制約を前提にした開発者ツールと Linux ユーティリティを出荷。'
+          'QuestByCycle: 認証、バックグラウンドジョブ、デプロイ、本番サポートを含む Flask / PostgreSQL の公開システム。',
+          'CrowdPM Platform: セキュアな ingest、認証、外部 API、データ処理、運用向け監視画面を一つにつないだクラウドホスト型システム。',
+          'Linux ワークフローや開発者向け基盤ユーティリティを含む、実際の制約に向き合った運用ツール。'
         ]
       }
     },
     {
       id: 'working-style',
       title: {
-        en: 'What I am effective on',
-        ja: '力を発揮しやすい領域'
+        en: 'How I work',
+        ja: '進め方'
       },
       items: {
         en: [
-          'Systems that need both product delivery and operational ownership.',
-          'Data-rich web products where APIs, workflows, and frontend behavior have to line up cleanly.',
-          'Geospatial, civic, and research-adjacent work when the product depends on maps, sensors, or structured field data.'
+          'Discover: clarify requirements, boundaries, and failure points before code becomes expensive.',
+          'Integrate: connect APIs, auth, data flows, and background processing into one reliable path.',
+          'Operate and improve: deploy, monitor, troubleshoot, document, and tighten the workflow after real use.'
         ],
         ja: [
-          'プロダクト delivery と運用責任の両方が必要なシステム。',
-          'API、ワークフロー、フロントエンドの挙動を綺麗に接続する必要がある data-rich web product。',
-          '地図、センサー、構造化フィールドデータに依存する地理空間・シビック・リサーチ隣接の仕事。'
+          'Discover: コード変更が高くつく前に、要件、境界、壊れやすい点を明確にする。',
+          'Integrate: API、認証、データフロー、バックグラウンド処理を一つの信頼できる経路にまとめる。',
+          'Operate / Improve: デプロイ、監視、トラブルシュート、ドキュメント化を行い、実運用の後でワークフローを締める。'
         ]
+      }
+    },
+    {
+      id: 'integration-automation',
+      title: {
+        en: 'Integration / Automation',
+        ja: '連携 / 自動化'
+      },
+      items: {
+        en: [...INTEGRATION_AUTOMATION_ITEMS.en],
+        ja: [...INTEGRATION_AUTOMATION_ITEMS.ja]
       }
     }
   ] as ResumeSection[]
@@ -311,16 +497,28 @@ export function resolveSharedProfileCopy(home: Record<string, unknown> | null | 
 
   return {
     headline: {
-      en: pick(home?.headline_en) || fallbackHeadline || CORE_ROLE_HEADLINE.en,
-      ja: pick(home?.headline_ja) || fallbackHeadline || CORE_ROLE_HEADLINE.ja
+      en: sanitizeProfileText(pick(home?.headline_en) || fallbackHeadline, CORE_ROLE_HEADLINE.en),
+      ja: sanitizeProfileText(pick(home?.headline_ja) || fallbackHeadline, CORE_ROLE_HEADLINE.ja)
     },
     supporting: {
-      en: pick(home?.supporting_en ?? home?.blurb_en) || fallbackSupporting || CORE_SUPPORTING_COPY.en,
-      ja: pick(home?.supporting_ja ?? home?.blurb_ja) || fallbackSupporting || CORE_SUPPORTING_COPY.ja
+      en: sanitizeProfileText(
+        pick(home?.supporting_en ?? home?.blurb_en) || fallbackSupporting,
+        CORE_SUPPORTING_COPY.en
+      ),
+      ja: sanitizeProfileText(
+        pick(home?.supporting_ja ?? home?.blurb_ja) || fallbackSupporting,
+        CORE_SUPPORTING_COPY.ja
+      )
     },
     secondarySpecialization: {
-      en: pick(home?.secondary_en ?? home?.secondary_specialization_en) || fallbackSecondary || SECONDARY_SPECIALIZATION.en,
-      ja: pick(home?.secondary_ja ?? home?.secondary_specialization_ja) || fallbackSecondary || SECONDARY_SPECIALIZATION.ja
+      en: sanitizeProfileText(
+        pick(home?.secondary_en ?? home?.secondary_specialization_en) || fallbackSecondary,
+        SECONDARY_SPECIALIZATION.en
+      ),
+      ja: sanitizeProfileText(
+        pick(home?.secondary_ja ?? home?.secondary_specialization_ja) || fallbackSecondary,
+        SECONDARY_SPECIALIZATION.ja
+      )
     }
   }
 }
@@ -343,6 +541,7 @@ export function identifyProject(project: Pick<ProjectRecord, 'id' | 'title' | 'r
 
   if (candidates.includes('crowdpmplatform')) return 'crowdpmplatform'
   if (candidates.includes('questbycycle')) return 'questbycycle'
+  if (candidates.includes('moonshineart')) return 'moonshineart'
   if (candidates.includes('arm64adk')) return 'arm64adk'
   if (candidates.includes('dripcopy')) return 'dripcopy'
   return ''
@@ -363,6 +562,7 @@ export function projectNarrative(project: ProjectRecord): ProjectNarrative {
     featured: false,
     summary: mergeText(project.description, project.problem),
     problem: mergeText(project.problem, project.description),
+    systems: mergeText(project.architecture, project.owned),
     owned: project.owned,
     architecture: project.architecture,
     result: mergeText(project.result, project.impact)
@@ -372,6 +572,7 @@ export function projectNarrative(project: ProjectRecord): ProjectNarrative {
     ...fallback,
     summary: mergeText(project.description, fallback.summary),
     problem: mergeText(project.problem, fallback.problem),
+    systems: mergeText(project.architecture, fallback.systems),
     owned: mergeText(project.owned, fallback.owned),
     architecture: mergeText(project.architecture, fallback.architecture),
     result: mergeText(project.result, fallback.result)
@@ -391,6 +592,8 @@ export function selectFeaturedProjects(projects: ProjectRecord[], featuredIds: s
     const selected = featuredIds
       .map(featuredId => projects.find(project => project.id === featuredId))
       .filter((project): project is ProjectRecord => Boolean(project))
+      .filter(project => projectNarrative(project).featured)
+
     if (selected.length >= count) {
       return selected.slice(0, count)
     }

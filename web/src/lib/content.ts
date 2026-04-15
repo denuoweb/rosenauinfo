@@ -32,35 +32,29 @@ const mockDocs: Record<string, any> = {
   site: {
     name_en: 'Jaron Rosenau',
     name_ja: 'ジャロン・ローゼナウ',
-    footerNote: 'Professional portfolio centered on shipped systems.',
+    footerNote: 'Implementation and integration case studies.',
     contactEmail: 'jaron@rosenau.info',
     github_url: 'https://github.com/denuoweb',
     linkedin_url: 'https://www.linkedin.com/in/jaronrosenau'
   },
   home: {
-    headline_en: 'Backend / Platform Engineer shipping data-rich web products end-to-end.',
-    headline_ja: 'データリッチな Web プロダクトをエンドツーエンドで届ける Backend / Platform Engineer。',
-    supporting_en: 'I build and operate Python/TypeScript systems across APIs, data workflows, CI/CD, cloud infrastructure, and user-facing web products.',
-    supporting_ja: 'API、データワークフロー、CI/CD、クラウド基盤、ユーザー向け Web プロダクトまで、Python / TypeScript のシステムを構築・運用しています。',
-    featured_project_ids: ['crowdpm-platform', 'quest-by-cycle', 'arm64-adk'],
-    links_en: 'Resume | /resume\nProjects | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau',
-    links_ja: '履歴書 | /resume\nプロジェクト | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau'
+    headline_en: 'Implementation / Integration Engineer',
+    headline_ja: '実装 / 連携エンジニア',
+    supporting_en: 'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.',
+    supporting_ja: '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。',
+    featured_project_ids: ['quest-by-cycle', 'crowdpm-platform'],
+    links_en: 'Resume | /resume\nCase Studies | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau',
+    links_ja: '履歴書 | /resume\n事例 | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau'
   },
   about: {
-    headline_en: 'Backend / Platform Engineer',
-    headline_ja: 'Backend / Platform Engineer',
-    intro_en: 'I design, build, deploy, and operate data-rich web products with a backend/platform center of gravity.',
-    intro_ja: 'バックエンド / プラットフォームを軸に、データリッチな Web プロダクトを設計・実装・デプロイ・運用しています。',
-    what_i_do_en: 'Build Python and TypeScript systems across APIs, background jobs, storage, and web apps.\nOwn delivery from implementation through CI/CD, deploys, and iteration.\nUse infrastructure and operations as part of product delivery rather than a handoff.',
-    what_i_do_ja: 'API、バックグラウンドジョブ、ストレージ、Web アプリをまたぐ Python / TypeScript システムを構築する。\n実装から CI/CD、デプロイ、改善まで一気通貫で担当する。\nインフラや運用を別工程ではなく、プロダクト delivery の一部として扱う。',
-    what_ive_shipped_en: 'QuestByCycle, a live Flask/Postgres web product with background jobs and production provisioning.\nCrowdPM Platform, a civic air-quality stack spanning secure ingest, calibrated data processing, and WebGL mapping.\nOpen-source tooling including ARM64-ADK and DripCopy for Linux and developer-platform workflows.',
-    what_ive_shipped_ja: 'QuestByCycle: バックグラウンドジョブと本番基盤を含む、Flask / Postgres のライブ Web プロダクト。\nCrowdPM Platform: セキュアな ingest、校正済みデータ処理、WebGL マッピングを備えたシビック向け空気質システム。\nARM64-ADK や DripCopy など、Linux と開発者向け基盤に関するオープンソースツール。',
-    what_i_work_well_on_en: 'Backend and platform work for products with real operational constraints.\nAPIs, auth, data workflows, CI/CD, Linux, and cloud infrastructure.\nGeospatial, civic, and research-adjacent systems when maps, sensors, or structured field data matter.',
-    what_i_work_well_on_ja: '実運用上の制約があるプロダクトに対するバックエンド / プラットフォーム開発。\nAPI、認証、データワークフロー、CI/CD、Linux、クラウド基盤。\n地図、センサー、構造化フィールドデータが重要な地理空間・シビック・リサーチ隣接のシステム。'
+    headline_en: 'Implementation / Integration Engineer',
+    headline_ja: '実装 / 連携エンジニア',
+    intro_en: 'I work on messy implementation problems where requirements, APIs, auth, operations, and production support all need to line up.',
+    intro_ja: '要件、API、認証、運用、本番サポートを一つの delivery としてそろえる必要がある、複雑な実装案件で力を発揮します。'
   },
   contact: {
-    intro_en: 'Reach out about project collaboration, consulting work, or backend/platform systems.',
-    intro_ja: '協業、コンサルティング、またはバックエンド / プラットフォーム領域のご相談についてご連絡ください。',
+    intro_en: 'Reach out about implementation and integration work, technical delivery, or backend systems.',
+    intro_ja: '実装 / 連携案件、技術導入、またはバックエンド delivery のご相談についてご連絡ください。',
     availability_en: 'Typically responds within 1-2 business days.',
     availability_ja: '通常 1-2 営業日以内に返信します。'
   },

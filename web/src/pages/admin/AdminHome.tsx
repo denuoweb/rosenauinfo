@@ -368,7 +368,7 @@ export default function AdminHome() {
           <input
             value={footerNote}
             onChange={e => setFooterNote(e.target.value)}
-            placeholder="Professional portfolio centered on shipped systems."
+            placeholder="Implementation and integration case studies."
           />
         </label>
         <button type="submit" disabled={savingFooter}>
@@ -412,7 +412,7 @@ export default function AdminHome() {
           />
         </label>
         <label>
-          Secondary specialization (English)
+          Execution accelerator note (English)
           <textarea
             value={secondary.en}
             onChange={e => setSecondary(prev => ({ ...prev, en: e.target.value }))}
@@ -420,7 +420,7 @@ export default function AdminHome() {
           />
         </label>
         <label>
-          副次的な専門領域（日本語）
+          実行の加速要素（日本語）
           <textarea
             value={secondary.ja}
             onChange={e => setSecondary(prev => ({ ...prev, ja: e.target.value }))}

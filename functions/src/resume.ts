@@ -92,6 +92,10 @@ function dedupeStrings(values: string[]) {
   return Array.from(new Set(values.map(value => value.trim()).filter(Boolean)))
 }
 
+function isLegacyBrandCopy(value: string) {
+  return /backend\s*\/\s*platform engineer|data-rich web products?|geospatial|research-adjacent|データ量の多い\s*web\s*プロダクト|地理空間|研究周辺|公共性の高い領域/i.test(value)
+}
+
 function normalizeLanguage(req: Request): 'en' | 'ja' {
   const queryLang = Array.isArray(req.query.lang) ? req.query.lang[0] : req.query.lang
   const raw = pick(queryLang).toLowerCase()
@@ -260,7 +264,8 @@ function normalizeSections(doc: ResumeRecord | null, language: 'en' | 'ja'): Nor
       return {
         id: pick(section.id) || `section-${index}`,
         title: titlePrimary || titleFallback,
-        items: itemsPrimary.length > 0 ? itemsPrimary : itemsFallback
+        items: (itemsPrimary.length > 0 ? itemsPrimary : itemsFallback)
+          .filter(item => !isLegacyBrandCopy(item))
       }
     })
     .filter(section => section.title || section.items.length > 0)
@@ -273,63 +278,64 @@ function legacySummaryParagraphs(doc: ResumeRecord | null, language: 'en' | 'ja'
     ? toParagraphs(doc.summary_ja ?? doc.summary)
     : toParagraphs(doc.summary_en ?? doc.summary)
 
-  if (localized.length > 0) return localized
+  if (localized.length > 0) {
+    return localized.filter(paragraph => !isLegacyBrandCopy(paragraph))
+  }
 
   return language === 'ja'
-    ? toParagraphs(doc.summary_en ?? doc.summary)
-    : toParagraphs(doc.summary_ja ?? doc.summary)
+    ? toParagraphs(doc.summary_en ?? doc.summary).filter(paragraph => !isLegacyBrandCopy(paragraph))
+    : toParagraphs(doc.summary_ja ?? doc.summary).filter(paragraph => !isLegacyBrandCopy(paragraph))
 }
 
 function buildExecutiveSummary(doc: ResumeRecord | null, language: 'en' | 'ja', displayName: string): string[] {
   const fallbackPrimary = localizedText(
     language,
-    `${displayName} is a Backend / Platform Engineer shipping data-rich web products end-to-end.`,
-    `${displayName} は、データ量の多い Web プロダクトを要件定義から運用まで一気通貫で届ける Backend / Platform Engineer です。`
+    `${displayName} is an Implementation / Integration Engineer.`,
+    `${displayName} は、実装 / 連携エンジニアです。`
   )
   const fallbackSecondary = localizedText(
     language,
-    'I build and operate Python/TypeScript systems across APIs, data workflows, CI/CD, cloud infrastructure, Linux environments, and user-facing web products, with geospatial, civic, and research-adjacent systems as a secondary specialty.',
-    'Python / TypeScript を軸に、API、データ処理、CI/CD、クラウド基盤、Linux 環境、ユーザー向け Web プロダクトを構築・運用しています。地理空間、公共性の高い領域、研究周辺システムは副次的な専門領域です。'
+    'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.',
+    '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。'
   )
   const docParagraphs = legacySummaryParagraphs(doc, language)
   const secondParagraph = docParagraphs[0] || fallbackSecondary
-  const thirdParagraph = docParagraphs[1]
 
-  return dedupeStrings([fallbackPrimary, secondParagraph, ...(thirdParagraph ? [thirdParagraph] : [])]).slice(0, 3)
+  return dedupeStrings([fallbackPrimary, secondParagraph]).slice(0, 2)
 }
 
 function buildHeroCards(language: 'en' | 'ja'): ResumeCard[] {
   return [
     {
-      title: localizedText(language, 'Core role', '中核の役割'),
+      title: localizedText(language, 'Primary focus', '主軸'),
       body: localizedText(
         language,
-        'Backend / platform engineering with end-to-end ownership from requirements through deployment and iteration.',
-        '要件定義からデプロイ、継続改善までを担う Backend / Platform Engineering。'
+        'Implementation and integration delivery with ownership from discovery through production support.',
+        '技術調査から本番サポートまで責任を持つ、実装 / 連携 delivery。'
       )
     },
     {
-      title: localizedText(language, 'Stack', '技術スタック'),
+      title: localizedText(language, 'Core stack', '主要技術'),
       body: localizedText(
         language,
-        'Python, TypeScript, APIs, data systems, CI/CD, cloud infrastructure, and Linux operations.',
-        'Python、TypeScript、API、データシステム、CI/CD、クラウド基盤、Linux 運用。'
+        'Python, TypeScript, APIs, auth, webhooks, SQL, and cloud operations.',
+        'Python、TypeScript、API、認証、Webhook、SQL、クラウド運用。'
       )
     },
     {
-      title: localizedText(language, 'Shipped systems', '実績あるシステム'),
+      title: localizedText(language, 'Delivery scope', '担当領域'),
       body: localizedText(
         language,
-        'Production web products, secure ingest pipelines, background jobs, observability, and packaged developer tooling.',
-        '本番 Web プロダクト、セキュアな ingest パイプライン、バックグラウンドジョブ、可観測性、配布可能な開発ツール。'
+        'Public products, backend services, background jobs, and operational tooling.',
+        '公開プロダクト、バックエンドサービス、バックグラウンドジョブ、運用ツール。'
       )
     },
     {
-      title: localizedText(language, 'Secondary focus', '副次的な専門領域'),
+      title: localizedText(language, 'AI use', 'AI の使い方'),
       body: localizedText(
         language,
-        'Geospatial, civic, and research-adjacent systems that still need strong backend and platform discipline.',
-        '地理空間、公共性の高い領域、研究周辺システムなど、バックエンドと基盤設計が重要な案件。'
+        'GPT/Codex as an accelerator for implementation speed, debugging, and documentation.',
+        '実装速度、デバッグ、ドキュメント整備を高めるための GPT/Codex 活用。'
       )
     }
   ]
@@ -338,76 +344,81 @@ function buildHeroCards(language: 'en' | 'ja'): ResumeCard[] {
 function buildCuratedSections(language: 'en' | 'ja'): NormalizedSection[] {
   return [
     {
-      id: 'what-i-do',
-      title: localizedText(language, 'What I do', '何をしているか'),
+      id: 'core-strengths',
+      title: localizedText(language, 'Core strengths', 'コアの強み'),
       items: [
         localizedText(
           language,
-          'Build and operate backend and platform systems in Python and TypeScript, including APIs, data workflows, CI/CD, cloud infrastructure, and user-facing web products.',
-          'Python / TypeScript で backend と platform を構築・運用し、API、データ処理、CI/CD、クラウド基盤、ユーザー向け Web プロダクトまで担当します。'
+          'API integration, auth flows, webhooks, background processing, SQL, data validation, and cloud-hosted services.',
+          'API 連携、認証フロー、Webhook、バックグラウンド処理、SQL、データバリデーション、クラウドホスト型サービス。'
         ),
         localizedText(
           language,
-          'Own delivery end-to-end: requirements, implementation, release, monitoring, and iteration after launch.',
-          '要件定義、実装、リリース、監視、公開後の改善までを一気通貫で担当します。'
+          'Python and TypeScript delivery across backend services, operational tooling, and public web products.',
+          'バックエンドサービス、運用ツール、公開 Web プロダクトにまたがる Python / TypeScript の delivery。'
+        ),
+        localizedText(
+          language,
+          'Production troubleshooting, deployment, monitoring, and documentation after launch.',
+          '公開後の本番トラブル対応、デプロイ、監視、ドキュメント整備。'
         )
       ]
     },
     {
-      id: 'what-ive-shipped',
-      title: localizedText(language, 'What I’ve shipped', 'これまでに出したもの'),
+      id: 'selected-delivery-examples',
+      title: localizedText(language, 'Selected delivery examples', '主な delivery 事例'),
       items: [
         localizedText(
           language,
-          'QuestByCycle: a Flask/PostgreSQL product with background jobs, production provisioning, and a live public deployment.',
-          'QuestByCycle: Flask / PostgreSQL、バックグラウンドジョブ、本番プロビジョニングを備えた公開運用中のプロダクト。'
+          'QuestByCycle: public Flask/PostgreSQL system with auth, background jobs, deployment, and production support.',
+          'QuestByCycle: 認証、バックグラウンドジョブ、デプロイ、本番サポートを含む Flask / PostgreSQL の公開システム。'
         ),
         localizedText(
           language,
-          'CrowdPM Platform: a secure PM2.5 ingest and visualization stack with Fastify APIs, Cloud Functions, Firestore buckets, and WebGL maps.',
-          'CrowdPM Platform: Fastify API、Cloud Functions、Firestore の bucket 管理、WebGL 地図表示を備えた PM2.5 ingest / 可視化基盤。'
+          'CrowdPM Platform: secure ingest, auth, partner APIs, data processing, and operator-facing monitoring in one cloud-hosted system.',
+          'CrowdPM Platform: セキュアな ingest、認証、外部 API、データ処理、運用向け監視画面を一つにつないだクラウドホスト型システム。'
         ),
         localizedText(
           language,
-          'ARM64-ADK and DripCopy: developer tooling and resilient Linux utilities that solve real operational problems.',
-          'ARM64-ADK と DripCopy: 実運用上の問題を解く開発者向けツールと堅牢な Linux ユーティリティ。'
+          'Operational tooling shipped around real constraints, including Linux workflows and developer-platform utilities.',
+          'Linux ワークフローや開発者向け基盤ユーティリティを含む、実際の制約に向き合った運用ツール。'
         )
       ]
     },
     {
-      id: 'what-i-work-well-on',
-      title: localizedText(language, 'What I work well on', '得意なこと'),
+      id: 'how-i-work',
+      title: localizedText(language, 'How I work', '進め方'),
       items: [
         localizedText(
           language,
-          'Turning unclear requirements into shippable scope and keeping the implementation aligned with the product surface.',
-          '曖昧な要求を出荷可能なスコープに落とし込み、実装をプロダクト面と揃えます。'
+          'Discover: clarify requirements, boundaries, and failure points before code becomes expensive.',
+          'Discover: コード変更が高くつく前に、要件、境界、壊れやすい点を明確にする。'
         ),
         localizedText(
           language,
-          'Systems integration across APIs, auth, data modeling, background processing, and deployment pipelines.',
-          'API、認証、データモデリング、バックグラウンド処理、デプロイパイプラインの統合に強みがあります。'
+          'Integrate: connect APIs, auth, data flows, and background processing into one reliable path.',
+          'Integrate: API、認証、データフロー、バックグラウンド処理を一つの信頼できる経路にまとめる。'
         ),
         localizedText(
           language,
-          'Linux and cloud operations, especially when the system has to stay usable after launch.',
-          '公開後も使い続けられることが重要な Linux / cloud 運用。'
+          'Operate and improve: deploy, monitor, troubleshoot, document, and tighten the workflow after real use.',
+          'Operate / Improve: デプロイ、監視、トラブルシュート、ドキュメント化を行い、実運用の後でワークフローを締める。'
         )
       ]
     },
     {
-      id: 'secondary-specialization',
-      title: localizedText(language, 'Secondary specialization', '副次的な専門領域'),
+      id: 'integration-automation',
+      title: localizedText(language, 'Integration / Automation', '連携 / 自動化'),
       items: [
         localizedText(
           language,
-          'Geospatial, civic, and research-adjacent systems where data quality, delivery discipline, and operational reliability matter.',
-          '地理空間、公共性の高い領域、研究周辺のシステムで、データ品質・デリバリー・運用安定性が重要な案件。'
+          'API integration, webhook consumers/producers, background processing, SQL, data validation, and cloud-hosted services.',
+          'API 連携、Webhook の consumer / producer、バックグラウンド処理、SQL、データバリデーション、クラウドホスト型サービス。'
         ),
         localizedText(
           language,
-          'These are support areas for the main story: backend/platform engineering with shipped products.',
-          'これらは主軸ではなく、backend/platform engineering で成果物を出すための副次的な強みです。'
+          'Debugging production data and auth issues, plus AI-assisted development with GPT/Codex for implementation speed, debugging, and documentation.',
+          '本番データと認証まわりの不具合調査に加え、実装速度、デバッグ、ドキュメント整備を高めるための GPT/Codex を使った AI 支援開発。'
         )
       ]
     }
@@ -417,7 +428,7 @@ function buildCuratedSections(language: 'en' | 'ja'): NormalizedSection[] {
 function buildShippedSystemsSection(language: 'en' | 'ja'): NormalizedSection {
   return {
     id: 'selected-systems',
-    title: localizedText(language, 'Selected systems', '選定システム'),
+    title: localizedText(language, 'System and stack examples', 'システム / スタック例'),
     items: [
       localizedText(
         language,
@@ -493,7 +504,7 @@ function resumeHtml({
         home: 'ホーム',
         about: '紹介',
         resume: '履歴書',
-        projects: 'プロジェクト',
+        projects: '事例',
         contact: '連絡先',
         back: 'サイトへ戻る',
         displayLanguage: '表示言語',
@@ -504,23 +515,23 @@ function resumeHtml({
         home: 'Home',
         about: 'About',
         resume: 'Resume',
-        projects: 'Projects',
+        projects: 'Case Studies',
         contact: 'Contact',
         back: 'Back to site',
         displayLanguage: 'Display language',
         relatedProfiles: 'Related profiles',
         summary: 'Summary'
       }
-  const title = localizedText(language, 'Resume | Backend / Platform Engineer', '履歴書 | Backend / Platform Engineer')
+  const title = localizedText(language, 'Resume | Implementation / Integration Engineer', '履歴書 | 実装 / 連携エンジニア')
   const subtitle = localizedText(
     language,
-    'Backend / Platform Engineer shipping data-rich web products end-to-end.',
-    'データ量の多い Web プロダクトを一気通貫で届ける Backend / Platform Engineer。'
+    'Implementation / Integration Engineer',
+    '実装 / 連携エンジニア'
   )
   const description = localizedText(
     language,
-    `${displayName} is a Backend / Platform Engineer shipping Python/TypeScript systems across APIs, data workflows, CI/CD, cloud infrastructure, Linux operations, and product delivery.`,
-    `${displayName} は、Python / TypeScript を軸に、API、データ処理、CI/CD、クラウド基盤、Linux 運用、プロダクトデリバリーまで担う Backend / Platform Engineer です。`
+    `${displayName} builds API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.`,
+    `${displayName} は、技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。`
   )
   const downloadLabel = localizedText(language, 'Open résumé PDF', '履歴書 PDF を開く')
   const neutral = localizedText(
@@ -532,15 +543,15 @@ function resumeHtml({
   const etaLabel = language === 'ja' ? '公開予定日' : 'Target publish date'
   const leadText = localizedText(
     language,
-    `${displayName} is strongest when the work spans APIs, data systems, shipping discipline, and the operational details needed to keep a product running.`,
-    `${displayName} は、API、データシステム、出荷の規律、そして運用面まで含めてプロダクトを前に進める仕事を得意としています。`
+    `${displayName} is strongest when the work spans unclear requirements, multiple systems, and the production details needed to keep a delivery moving.`,
+    `${displayName} は、曖昧な要件、複数システム、そして delivery を前に進める本番運用の細部までまたぐ仕事を得意としています。`
   )
   const pdfLink = `/resume.pdf${language === 'ja' ? '?lang=ja' : ''}`
   const englishPath = '/resume?lang=en'
   const japanesePath = '/resume?lang=ja'
   const sectionLinks = [
     { href: '#summary', label: nav.summary },
-    { href: '#experience', label: localizedText(language, 'Experience', '経験') },
+    { href: '#experience', label: localizedText(language, 'Delivery', 'デリバリー') },
     { href: '#selected-systems', label: localizedText(language, 'Systems', 'システム') },
     ...(sameAsLinks.length > 0 ? [{ href: '#profiles', label: nav.relatedProfiles }] : [])
   ]
@@ -579,19 +590,21 @@ function resumeHtml({
     mainEntity: {
       '@type': 'Person',
       name: displayName,
-      jobTitle: localizedText(language, 'Backend / Platform Engineer', 'Backend / Platform Engineer'),
+      jobTitle: localizedText(language, 'Implementation / Integration Engineer', '実装 / 連携エンジニア'),
       description,
       knowsAbout: [
         'Python',
         'TypeScript',
         'APIs',
-        'data systems',
-        'CI/CD',
-        'Linux',
+        'authentication',
+        'webhooks',
+        'background processing',
+        'SQL',
+        'data validation',
         'cloud operations',
-        'geospatial systems',
-        'civic technology',
-        'research-adjacent systems'
+        'production troubleshooting',
+        'technical delivery',
+        'AI-assisted development'
       ],
       ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks.map(link => link.url) } : {})
     }
@@ -903,15 +916,15 @@ function resumeHtml({
           <div class="topline">
             <div class="hero-copy">
               <p class="eyebrow">${escapeHtml(subtitle)}</p>
-              <h1 id="resume-title">${escapeHtml(`${displayName} | ${localizedText(language, 'Backend / Platform Engineer', 'Backend / Platform Engineer')}`)}</h1>
+              <h1 id="resume-title">${escapeHtml(`${displayName} | ${localizedText(language, 'Implementation / Integration Engineer', '実装 / 連携エンジニア')}`)}</h1>
             </div>
             <a class="back-link" href="${escapeHtml(baseUrl)}">${escapeHtml(nav.back)}</a>
           </div>
           <p class="lead">${escapeHtml(leadText)}</p>
           <p class="supporting-copy">${escapeHtml(localizedText(
             language,
-            'I own the path from product intent to production systems, with geospatial, civic, and research-adjacent work as supporting context rather than the headline.',
-            'プロダクトの意図から本番運用までを一気通貫で担い、地理空間・公共性の高い領域・研究周辺の仕事は主軸を支える副次的な文脈として扱っています。'
+            'GPT/Codex is an execution accelerator I use for implementation speed, debugging, and documentation, not the headline value I lead with.',
+            'GPT/Codex は、実装速度、デバッグ、ドキュメント整備を高めるための加速手段であり、主役として前面に出す価値ではありません。'
           ))}</p>
           ${metadataHtml ? `<div class="meta-block">${metadataHtml}</div>` : ''}
           <nav class="links" aria-label="${escapeHtml(nav.displayLanguage)}">

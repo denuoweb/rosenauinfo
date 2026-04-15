@@ -4,10 +4,12 @@ import { getPublicDoc, type LocalizedText } from '../lib/content'
 import {
   RESUME_DEFAULTS,
   localizedValue,
-  resolveSharedProfileCopy
+  resolveSharedProfileCopy,
+  sanitizeProfileItems
 } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { useSeo } from '../lib/seo'
+import { getLocalizedSiteName } from '../lib/site'
 import type { AppShellContext } from '../components/Layout'
 
 type ResumeSectionEntry = {
@@ -45,7 +47,7 @@ export function Component() {
   const { language } = useLanguage()
   const data = useLoaderData() as ResumeLoaderData
   const { site } = useOutletContext<AppShellContext>()
-  const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
+  const displayName = getLocalizedSiteName(site, language)
 
   return (
     <Suspense fallback={<ResumeSkeleton />}>
@@ -74,7 +76,7 @@ function ResumeContent({
   const summaryParagraphs = dedupeStrings([
     ...defaultSummary,
     ...legacySummary.filter(paragraph => !isOffBrandParagraph(paragraph))
-  ]).slice(0, 3)
+  ]).slice(0, 2)
   const sections = buildResumeSections(language, resume.sections)
   const updatedCopy = resume.updatedAt
     ? (language === 'ja' ? `最終更新: ${resume.updatedAt}` : `Updated: ${resume.updatedAt}`)
@@ -137,7 +139,7 @@ function ResumeContent({
       </div>
 
       <section className="resume-section">
-        <h2>{language === 'ja' ? '副次的な専門領域' : 'Secondary specialization'}</h2>
+        <h2>{language === 'ja' ? '実行の加速要素' : 'Execution accelerators'}</h2>
         <p>{localizedValue(resume.secondarySpecialization, language)}</p>
       </section>
     </article>
@@ -195,15 +197,25 @@ async function loadResumeCopy(): Promise<ResumeCopy> {
 
 function buildResumeSections(language: 'en' | 'ja', sections: ResumeSectionEntry[]) {
   const defaultSections = RESUME_DEFAULTS.sections
-  return [
-    ...defaultSections,
-    ...sections.filter(section => {
+  const sanitizedSections = sections
+    .map(section => ({
+      ...section,
+      items: {
+        en: sanitizeProfileItems(section.items.en, []),
+        ja: sanitizeProfileItems(section.items.ja, [])
+      }
+    }))
+    .filter(section => {
       const title = localizedValue(section.title, language)
       const items = language === 'ja'
         ? (section.items.ja.length ? section.items.ja : section.items.en)
         : (section.items.en.length ? section.items.en : section.items.ja)
       return Boolean(title || items.length)
     })
+
+  return [
+    ...defaultSections,
+    ...sanitizedSections
   ]
 }
 
@@ -212,20 +224,20 @@ function buildResumeHighlights(language: 'en' | 'ja') {
     {
       title: language === 'ja' ? '主軸' : 'Primary focus',
       body: language === 'ja'
-        ? 'Backend / platform engineering と出荷済みプロダクトの運用責任。'
-        : 'Backend/platform engineering with ownership after launch.'
+        ? '実装 / 連携 delivery を本番サポートまで持つこと。'
+        : 'Implementation and integration delivery with ownership through production support.'
     },
     {
       title: language === 'ja' ? '主要技術' : 'Core stack',
       body: language === 'ja'
-        ? 'Python、TypeScript、API、データシステム、CI/CD、Linux、クラウド。'
-        : 'Python, TypeScript, APIs, data systems, CI/CD, Linux, and cloud infrastructure.'
+        ? 'Python、TypeScript、API、認証、Webhook、SQL、クラウド運用。'
+        : 'Python, TypeScript, APIs, auth, webhooks, SQL, and cloud operations.'
     },
     {
       title: language === 'ja' ? '実績タイプ' : 'Shipped systems',
       body: language === 'ja'
-        ? '公開 Web プロダクト、データパイプライン、開発者向けツール。'
-        : 'Live web products, data pipelines, and developer tooling.'
+        ? '公開プロダクト、バックエンドサービス、運用ツール。'
+        : 'Public products, backend services, and operational tooling.'
     }
   ]
 }

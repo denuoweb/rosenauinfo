@@ -1,32 +1,43 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-type Theme = 'light' | 'dark' | 'cyber'
-type ThemeContextValue = { theme: Theme; setTheme: (t: Theme) => void }
+export const themes = ['light', 'dark', 'cyber'] as const
+export type Theme = (typeof themes)[number]
+
+type ThemeContextValue = { theme: Theme; setTheme: (theme: Theme) => void }
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 const STORAGE_KEY = 'site.theme'
 
-function applyTheme(t: Theme) {
-  const root = document.documentElement
-  root.setAttribute('data-theme', t)
+export function isTheme(value: string): value is Theme {
+  return themes.includes(value as Theme)
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const getInitial = (): Theme => {
-    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null
-    if (saved === 'light' || saved === 'dark' || saved === 'cyber') return saved
-    return 'light'
-  }
-  const [theme, setThemeState] = useState<Theme>(getInitial)
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'light'
+  const saved = window.localStorage.getItem(STORAGE_KEY)
+  return saved && isTheme(saved) ? saved : 'light'
+}
+
+function applyTheme(theme: Theme) {
+  const root = document.documentElement
+  root.setAttribute('data-theme', theme)
+  root.style.colorScheme = theme === 'light' ? 'light' : 'dark'
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
 
   useEffect(() => {
     applyTheme(theme)
-    localStorage.setItem(STORAGE_KEY, theme)
+    window.localStorage.setItem(STORAGE_KEY, theme)
   }, [theme])
 
-  const value = useMemo(() => ({
-    theme,
-    setTheme: (t: Theme) => setThemeState(t)
-  }), [theme])
+  const value = useMemo(
+    () => ({
+      theme,
+      setTheme: setThemeState
+    }),
+    [theme]
+  )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

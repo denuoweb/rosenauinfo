@@ -1,34 +1,31 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 export type SupportedLanguage = 'en' | 'ja'
 
 type LanguageContextValue = {
   language: SupportedLanguage
   setLanguage(lang: SupportedLanguage): void
-  toggleLanguage(): void
 }
 
 const STORAGE_KEY = 'homesite_language'
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined)
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<SupportedLanguage>('en')
+function getInitialLanguage(): SupportedLanguage {
+  if (typeof window === 'undefined') return 'en'
+  const stored = window.localStorage.getItem(STORAGE_KEY)
+  return stored === 'ja' ? 'ja' : 'en'
+}
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored === 'en' || stored === 'ja') {
-      setLanguage(stored)
-    }
-  }, [])
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<SupportedLanguage>(getInitialLanguage)
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, language)
+    document.documentElement.lang = language
   }, [language])
 
-  const toggleLanguage = () => setLanguage(prev => (prev === 'en' ? 'ja' : 'en'))
-
-  const value = useMemo(() => ({ language, setLanguage, toggleLanguage }), [language])
+  const value = useMemo(() => ({ language, setLanguage }), [language])
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
 }
