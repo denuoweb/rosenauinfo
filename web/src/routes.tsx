@@ -5,6 +5,8 @@ import AdminLayout from './pages/admin/AdminLayout'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminOverview from './pages/admin/AdminOverview'
 import AdminHome from './pages/admin/AdminHome'
+import AdminAbout from './pages/admin/AdminAbout'
+import AdminContact from './pages/admin/AdminContact'
 import AdminProjects from './pages/admin/AdminProjects'
 import AdminResume from './pages/admin/AdminResume'
 import { getPublicDoc } from './lib/content'
@@ -55,6 +57,8 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <AdminOverview /> },
       { path: 'home', element: <AdminHome /> },
+      { path: 'about', element: <AdminAbout /> },
+      { path: 'contact', element: <AdminContact /> },
       { path: 'projects', element: <AdminProjects /> },
       { path: 'resume', element: <AdminResume /> }
     ]

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, orderBy, query, setDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import { resolveSharedProfileCopy } from '../../lib/profileContent'
 
 type Bilingual = { en: string; ja: string }
 type Lang = 'en' | 'ja'
@@ -9,6 +10,18 @@ type EditableLink = {
   label: string
   url: string
 }
+type ProjectOption = {
+  id: string
+  title: string
+}
+type SiteProfiles = {
+  github: string
+  linkedin: string
+  x: string
+  youtube: string
+  blog: string
+  website: string
+}
 
 const createId = () => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -16,6 +29,8 @@ const createId = () => {
   }
   return `link-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
+
+const pick = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
 const parseLinks = (value: unknown): EditableLink[] => {
   if (typeof value !== 'string') return []
@@ -52,49 +67,103 @@ const stringifyLinks = (links: EditableLink[]) =>
     .map(link => `${link.label} | ${link.url}`)
     .join('\n')
 
+const parseLineList = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value
+      .map(item => pick(item))
+      .filter(Boolean)
+  }
+
+  return pick(value)
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+}
+
 export default function AdminHome() {
   const [siteName, setSiteName] = useState<Bilingual>({ en: '', ja: '' })
-  const [blurb, setBlurb] = useState<Bilingual>({ en: '', ja: '' })
+  const [footerNote, setFooterNote] = useState('')
+  const [headline, setHeadline] = useState<Bilingual>({ en: '', ja: '' })
+  const [supporting, setSupporting] = useState<Bilingual>({ en: '', ja: '' })
+  const [secondary, setSecondary] = useState<Bilingual>({ en: '', ja: '' })
   const [links, setLinks] = useState<{ [key in Lang]: EditableLink[] }>({ en: [], ja: [] })
+  const [featuredProjectIdsText, setFeaturedProjectIdsText] = useState('')
+  const [availableProjects, setAvailableProjects] = useState<ProjectOption[]>([])
   const [contactEmail, setContactEmail] = useState('')
-  const [profileLinks, setProfileLinks] = useState({ github: '', linkedin: '' })
+  const [profileLinks, setProfileLinks] = useState<SiteProfiles>({
+    github: '',
+    linkedin: '',
+    x: '',
+    youtube: '',
+    blog: '',
+    website: ''
+  })
   const [savingSite, setSavingSite] = useState(false)
-  const [savingBlurb, setSavingBlurb] = useState(false)
+  const [savingFooter, setSavingFooter] = useState(false)
+  const [savingHero, setSavingHero] = useState(false)
   const [savingLinks, setSavingLinks] = useState(false)
+  const [savingFeaturedProjects, setSavingFeaturedProjects] = useState(false)
   const [savingContactEmail, setSavingContactEmail] = useState(false)
   const [savingProfiles, setSavingProfiles] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
-      const siteSnap = await getDoc(doc(db, 'public', 'site'))
+      const [siteSnap, homeSnap, projectsSnap] = await Promise.all([
+        getDoc(doc(db, 'public', 'site')),
+        getDoc(doc(db, 'public', 'home')),
+        getDocs(query(collection(db, 'projects'), orderBy('order', 'asc')))
+      ])
+
       if (siteSnap.exists()) {
         const data = siteSnap.data()
         setSiteName({
-          en: (data.name_en as string) || (data.name as string) || '',
-          ja: (data.name_ja as string) || (data.name as string) || ''
+          en: pick(data.name_en) || pick(data.name),
+          ja: pick(data.name_ja) || pick(data.name)
         })
+        setFooterNote(pick(data.footerNote) || pick(data.footer_note))
         setContactEmail(
-          ((data.contactEmail as string) || (data.contact_email as string) || (data.email as string) || '').trim()
+          pick(data.contactEmail) || pick(data.contact_email) || pick(data.email)
         )
         setProfileLinks({
-          github: ((data.githubUrl as string) || (data.github_url as string) || (data.github as string) || '').trim(),
-          linkedin: ((data.linkedinUrl as string) || (data.linkedin_url as string) || (data.linkedin as string) || '').trim()
+          github: pick(data.githubUrl) || pick(data.github_url) || pick(data.github),
+          linkedin: pick(data.linkedinUrl) || pick(data.linkedin_url) || pick(data.linkedin),
+          x: pick(data.xUrl) || pick(data.x_url) || pick(data.twitterUrl) || pick(data.twitter_url) || pick(data.twitter),
+          youtube: pick(data.youtubeUrl) || pick(data.youtube_url) || pick(data.youtube),
+          blog: pick(data.blogUrl) || pick(data.blog_url) || pick(data.blog),
+          website: pick(data.websiteUrl) || pick(data.website_url) || pick(data.website)
         })
       }
-      const homeSnap = await getDoc(doc(db, 'public', 'home'))
+
       if (homeSnap.exists()) {
         const data = homeSnap.data()
-        setBlurb({
-          en: (data.blurb_en as string) || (data.blurb as string) || '',
-          ja: (data.blurb_ja as string) || (data.blurb as string) || ''
-        })
+        const sharedProfile = resolveSharedProfileCopy(data)
+        setHeadline(sharedProfile.headline)
+        setSupporting(sharedProfile.supporting)
+        setSecondary(sharedProfile.secondarySpecialization)
         setLinks({
           en: parseLinks(data.links_en),
           ja: parseLinks(data.links_ja)
         })
+        setFeaturedProjectIdsText(parseLineList(data.featured_project_ids ?? data.featured_projects_en).join('\n'))
+      } else {
+        const sharedProfile = resolveSharedProfileCopy(null)
+        setHeadline(sharedProfile.headline)
+        setSupporting(sharedProfile.supporting)
+        setSecondary(sharedProfile.secondarySpecialization)
       }
+
+      setAvailableProjects(
+        projectsSnap.docs.map(projectDoc => {
+          const data = projectDoc.data()
+          return {
+            id: projectDoc.id,
+            title: pick(data.title_en) || pick(data.title) || projectDoc.id
+          }
+        })
+      )
     }
+
     load()
   }, [])
 
@@ -103,28 +172,64 @@ export default function AdminHome() {
     setSavingSite(true)
     try {
       await setDoc(doc(db, 'public', 'site'), {
-        name_en: siteName.en,
-        name_ja: siteName.ja,
-        name: siteName.en
+        name_en: siteName.en.trim(),
+        name_ja: siteName.ja.trim(),
+        name: siteName.en.trim()
       }, { merge: true })
-      setMessage('Updated site name')
+      setMessage('Updated site name.')
     } finally {
       setSavingSite(false)
     }
   }
 
-  async function saveBlurb(e: FormEvent<HTMLFormElement>) {
+  async function saveFooter(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setSavingBlurb(true)
+    setSavingFooter(true)
     try {
-      await setDoc(doc(db, 'public', 'home'), {
-        blurb_en: blurb.en,
-        blurb_ja: blurb.ja,
-        blurb: blurb.en
+      const trimmed = footerNote.trim()
+      await setDoc(doc(db, 'public', 'site'), {
+        footerNote: trimmed || null
       }, { merge: true })
-      setMessage('Updated homepage blurb')
+      setFooterNote(trimmed)
+      setMessage(trimmed ? 'Updated footer note.' : 'Cleared footer note.')
     } finally {
-      setSavingBlurb(false)
+      setSavingFooter(false)
+    }
+  }
+
+  async function saveHero(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setSavingHero(true)
+    try {
+      const nextHeadline = {
+        en: headline.en.trim(),
+        ja: headline.ja.trim()
+      }
+      const nextSupporting = {
+        en: supporting.en.trim(),
+        ja: supporting.ja.trim()
+      }
+      const nextSecondary = {
+        en: secondary.en.trim(),
+        ja: secondary.ja.trim()
+      }
+      await setDoc(doc(db, 'public', 'home'), {
+        headline_en: nextHeadline.en,
+        headline_ja: nextHeadline.ja,
+        headline: nextHeadline.en,
+        supporting_en: nextSupporting.en,
+        supporting_ja: nextSupporting.ja,
+        supporting: nextSupporting.en,
+        secondary_en: nextSecondary.en,
+        secondary_ja: nextSecondary.ja,
+        secondary: nextSecondary.en
+      }, { merge: true })
+      setHeadline(nextHeadline)
+      setSupporting(nextSupporting)
+      setSecondary(nextSecondary)
+      setMessage('Updated homepage hero copy.')
+    } finally {
+      setSavingHero(false)
     }
   }
 
@@ -144,9 +249,24 @@ export default function AdminHome() {
         en: parseLinks(next.en),
         ja: parseLinks(next.ja)
       })
-      setMessage('Updated homepage links')
+      setMessage('Updated homepage links.')
     } finally {
       setSavingLinks(false)
+    }
+  }
+
+  async function saveFeaturedProjects(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setSavingFeaturedProjects(true)
+    try {
+      const nextIds = parseLineList(featuredProjectIdsText)
+      await setDoc(doc(db, 'public', 'home'), {
+        featured_project_ids: nextIds
+      }, { merge: true })
+      setFeaturedProjectIdsText(nextIds.join('\n'))
+      setMessage('Updated featured projects.')
+    } finally {
+      setSavingFeaturedProjects(false)
     }
   }
 
@@ -159,7 +279,7 @@ export default function AdminHome() {
         contactEmail: trimmed || null
       }, { merge: true })
       setContactEmail(trimmed)
-      setMessage(trimmed ? 'Updated contact email' : 'Cleared contact email')
+      setMessage(trimmed ? 'Updated contact email.' : 'Cleared contact email.')
     } finally {
       setSavingContactEmail(false)
     }
@@ -169,14 +289,24 @@ export default function AdminHome() {
     e.preventDefault()
     setSavingProfiles(true)
     try {
-      const github = profileLinks.github.trim()
-      const linkedin = profileLinks.linkedin.trim()
+      const next = {
+        github: profileLinks.github.trim(),
+        linkedin: profileLinks.linkedin.trim(),
+        x: profileLinks.x.trim(),
+        youtube: profileLinks.youtube.trim(),
+        blog: profileLinks.blog.trim(),
+        website: profileLinks.website.trim()
+      }
       await setDoc(doc(db, 'public', 'site'), {
-        github_url: github || null,
-        linkedin_url: linkedin || null
+        github_url: next.github || null,
+        linkedin_url: next.linkedin || null,
+        x_url: next.x || null,
+        youtube_url: next.youtube || null,
+        blog_url: next.blog || null,
+        website_url: next.website || null
       }, { merge: true })
-      setProfileLinks({ github, linkedin })
-      setMessage('Updated profile links')
+      setProfileLinks(next)
+      setMessage('Updated profile links.')
     } finally {
       setSavingProfiles(false)
     }
@@ -212,10 +342,11 @@ export default function AdminHome() {
 
   return (
     <div className="stack">
-      <h2>Home &amp; Profile</h2>
+      <h2>Home &amp; Site</h2>
+
       <form className="card form" onSubmit={saveSiteName}>
         <h3>Site Name</h3>
-        <p>This name appears in the navigation bar and footer.</p>
+        <p>This name appears in the navigation bar, page titles, and footer fallback.</p>
         <label>
           Name (English)
           <input value={siteName.en} onChange={e => setSiteName(prev => ({ ...prev, en: e.target.value }))} required />
@@ -229,24 +360,81 @@ export default function AdminHome() {
         </button>
       </form>
 
-      <form className="card form" onSubmit={saveBlurb}>
-        <h3>Homepage Blurb</h3>
+      <form className="card form" onSubmit={saveFooter}>
+        <h3>Footer Note</h3>
+        <p>Optional custom footer copy. Leave blank to fall back to the site name and current year.</p>
         <label>
-          Introduction (English)
-          <textarea value={blurb.en} onChange={e => setBlurb(prev => ({ ...prev, en: e.target.value }))} rows={4} />
+          Footer note
+          <input
+            value={footerNote}
+            onChange={e => setFooterNote(e.target.value)}
+            placeholder="Professional portfolio centered on shipped systems."
+          />
+        </label>
+        <button type="submit" disabled={savingFooter}>
+          {savingFooter ? 'Saving…' : 'Save Footer'}
+        </button>
+      </form>
+
+      <form className="card form" onSubmit={saveHero}>
+        <h3>Homepage Hero</h3>
+        <p>Edit the shared role/headline copy shown across the homepage and other public pages.</p>
+        <label>
+          Headline (English)
+          <textarea
+            value={headline.en}
+            onChange={e => setHeadline(prev => ({ ...prev, en: e.target.value }))}
+            rows={3}
+          />
         </label>
         <label>
-          紹介文（日本語）
-          <textarea value={blurb.ja} onChange={e => setBlurb(prev => ({ ...prev, ja: e.target.value }))} rows={4} />
+          見出し（日本語）
+          <textarea
+            value={headline.ja}
+            onChange={e => setHeadline(prev => ({ ...prev, ja: e.target.value }))}
+            rows={3}
+          />
         </label>
-        <button type="submit" disabled={savingBlurb}>
-          {savingBlurb ? 'Saving…' : 'Save Blurb'}
+        <label>
+          Supporting copy (English)
+          <textarea
+            value={supporting.en}
+            onChange={e => setSupporting(prev => ({ ...prev, en: e.target.value }))}
+            rows={4}
+          />
+        </label>
+        <label>
+          補足テキスト（日本語）
+          <textarea
+            value={supporting.ja}
+            onChange={e => setSupporting(prev => ({ ...prev, ja: e.target.value }))}
+            rows={4}
+          />
+        </label>
+        <label>
+          Secondary specialization (English)
+          <textarea
+            value={secondary.en}
+            onChange={e => setSecondary(prev => ({ ...prev, en: e.target.value }))}
+            rows={3}
+          />
+        </label>
+        <label>
+          副次的な専門領域（日本語）
+          <textarea
+            value={secondary.ja}
+            onChange={e => setSecondary(prev => ({ ...prev, ja: e.target.value }))}
+            rows={3}
+          />
+        </label>
+        <button type="submit" disabled={savingHero}>
+          {savingHero ? 'Saving…' : 'Save Hero Copy'}
         </button>
       </form>
 
       <form className="card form" onSubmit={saveLinks}>
         <h3>Homepage Links</h3>
-        <p>Only rows with both a label and URL are published, so empty LinkedIn rows will not show on the site.</p>
+        <p>Only rows with both a label and URL are published. LinkedIn links are ignored on the homepage hero.</p>
 
         <section className="stack" aria-labelledby="homepage-links-en-heading">
           <div className="section-editor-header">
@@ -270,7 +458,7 @@ export default function AdminHome() {
                   <input
                     value={link.label}
                     onChange={e => updateLink('en', link.id, 'label', e.target.value)}
-                    placeholder="LinkedIn"
+                    placeholder="GitHub"
                   />
                 </label>
                 <label>
@@ -278,7 +466,7 @@ export default function AdminHome() {
                   <input
                     value={link.url}
                     onChange={e => updateLink('en', link.id, 'url', e.target.value)}
-                    placeholder="https://linkedin.com/in/your-profile"
+                    placeholder="https://github.com/your-handle"
                   />
                 </label>
               </div>
@@ -308,7 +496,7 @@ export default function AdminHome() {
                   <input
                     value={link.label}
                     onChange={e => updateLink('ja', link.id, 'label', e.target.value)}
-                    placeholder="LinkedIn"
+                    placeholder="GitHub"
                   />
                 </label>
                 <label>
@@ -316,7 +504,7 @@ export default function AdminHome() {
                   <input
                     value={link.url}
                     onChange={e => updateLink('ja', link.id, 'url', e.target.value)}
-                    placeholder="https://linkedin.com/in/your-profile"
+                    placeholder="https://github.com/your-handle"
                   />
                 </label>
               </div>
@@ -329,9 +517,31 @@ export default function AdminHome() {
         </button>
       </form>
 
+      <form className="card form" onSubmit={saveFeaturedProjects}>
+        <h3>Featured Projects</h3>
+        <p>Control the projects shown on the homepage. Enter one project document ID per line, in display order.</p>
+        <label>
+          Featured project IDs
+          <textarea
+            value={featuredProjectIdsText}
+            onChange={e => setFeaturedProjectIdsText(e.target.value)}
+            rows={5}
+            placeholder="crowdpm-platform&#10;quest-by-cycle&#10;arm64-adk"
+          />
+        </label>
+        {availableProjects.length > 0 && (
+          <p className="muted">
+            Available IDs: {availableProjects.map(project => `${project.id} (${project.title})`).join(', ')}
+          </p>
+        )}
+        <button type="submit" disabled={savingFeaturedProjects}>
+          {savingFeaturedProjects ? 'Saving…' : 'Save Featured Projects'}
+        </button>
+      </form>
+
       <form className="card form" onSubmit={saveContact}>
         <h3>Contact Email</h3>
-        <p>This email appears in the site navigation as a mailto link.</p>
+        <p>This email appears in the site navigation and on the contact page.</p>
         <label>
           Email address
           <input
@@ -348,7 +558,7 @@ export default function AdminHome() {
 
       <form className="card form" onSubmit={saveProfiles}>
         <h3>Profile Links</h3>
-        <p>These links are used on About/Contact pages and in structured data (`sameAs`).</p>
+        <p>These links are used across public pages and structured data (`sameAs`).</p>
         <label>
           GitHub URL
           <input
@@ -365,6 +575,42 @@ export default function AdminHome() {
             value={profileLinks.linkedin}
             onChange={e => setProfileLinks(prev => ({ ...prev, linkedin: e.target.value }))}
             placeholder="https://www.linkedin.com/in/your-handle"
+          />
+        </label>
+        <label>
+          X URL
+          <input
+            type="url"
+            value={profileLinks.x}
+            onChange={e => setProfileLinks(prev => ({ ...prev, x: e.target.value }))}
+            placeholder="https://x.com/your-handle"
+          />
+        </label>
+        <label>
+          YouTube URL
+          <input
+            type="url"
+            value={profileLinks.youtube}
+            onChange={e => setProfileLinks(prev => ({ ...prev, youtube: e.target.value }))}
+            placeholder="https://www.youtube.com/@your-channel"
+          />
+        </label>
+        <label>
+          Blog URL
+          <input
+            type="url"
+            value={profileLinks.blog}
+            onChange={e => setProfileLinks(prev => ({ ...prev, blog: e.target.value }))}
+            placeholder="https://blog.example.com"
+          />
+        </label>
+        <label>
+          Website URL
+          <input
+            type="url"
+            value={profileLinks.website}
+            onChange={e => setProfileLinks(prev => ({ ...prev, website: e.target.value }))}
+            placeholder="https://example.com"
           />
         </label>
         <button type="submit" disabled={savingProfiles}>

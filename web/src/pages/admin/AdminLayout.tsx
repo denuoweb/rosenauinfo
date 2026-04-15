@@ -31,7 +31,9 @@ export default function AdminLayout() {
       <div className="admin-body">
         <nav className="admin-nav">
           <NavLink to="/admin" end className={({ isActive }) => isActive ? 'active' : undefined}>Overview</NavLink>
-          <NavLink to="/admin/home" className={({ isActive }) => isActive ? 'active' : undefined}>Home &amp; Profile</NavLink>
+          <NavLink to="/admin/home" className={({ isActive }) => isActive ? 'active' : undefined}>Home &amp; Site</NavLink>
+          <NavLink to="/admin/about" className={({ isActive }) => isActive ? 'active' : undefined}>About</NavLink>
+          <NavLink to="/admin/contact" className={({ isActive }) => isActive ? 'active' : undefined}>Contact</NavLink>
           <NavLink to="/admin/projects" className={({ isActive }) => isActive ? 'active' : undefined}>Projects</NavLink>
           <NavLink to="/admin/resume" className={({ isActive }) => isActive ? 'active' : undefined}>Resume</NavLink>
         </nav>

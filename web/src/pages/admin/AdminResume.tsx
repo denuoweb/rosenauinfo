@@ -6,6 +6,7 @@ import { db, storage } from '../../lib/firebase'
 type ResumeUrls = { en: string; ja: string }
 type Lang = 'en' | 'ja'
 type Bilingual = { en: string; ja: string }
+type ResumeMeta = { updatedAt: string; jaEta: string }
 type EditableSection = {
   id: string
   title_en: string
@@ -39,9 +40,11 @@ const stringifyList = (value: unknown) => {
 
 export default function AdminResume() {
   const [urls, setUrls] = useState<ResumeUrls>({ en: '', ja: '' })
+  const [meta, setMeta] = useState<ResumeMeta>({ updatedAt: '', jaEta: '' })
   const [summary, setSummary] = useState<Bilingual>({ en: '', ja: '' })
   const [sections, setSections] = useState<EditableSection[]>([])
   const [uploading, setUploading] = useState<{ [key in Lang]: boolean }>({ en: false, ja: false })
+  const [savingMeta, setSavingMeta] = useState(false)
   const [savingSummary, setSavingSummary] = useState(false)
   const [savingSections, setSavingSections] = useState(false)
   const [sectionsDirty, setSectionsDirty] = useState(false)
@@ -57,6 +60,16 @@ export default function AdminResume() {
           setUrls({
             en: typeof data.url_en === 'string' ? data.url_en : '',
             ja: typeof data.url_ja === 'string' ? data.url_ja : ''
+          })
+          setMeta({
+            updatedAt: typeof data.updatedAt === 'string'
+              ? data.updatedAt
+              : (typeof data.updated_at === 'string' ? data.updated_at : ''),
+            jaEta: typeof data.ja_eta === 'string'
+              ? data.ja_eta
+              : (typeof data.eta_ja === 'string'
+                  ? data.eta_ja
+                  : (typeof data.jaTargetDate === 'string' ? data.jaTargetDate : ''))
           })
           setSummary({
             en: typeof data.summary_en === 'string'
@@ -123,6 +136,30 @@ export default function AdminResume() {
       const file = event.target.files?.[0]
       if (file) handleUpload(lang, file)
       event.target.value = ''
+    }
+  }
+
+  async function saveMeta(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setSavingMeta(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const next = {
+        updatedAt: meta.updatedAt.trim(),
+        jaEta: meta.jaEta.trim()
+      }
+      await setDoc(doc(db, 'public', 'resume'), {
+        updatedAt: next.updatedAt || null,
+        ja_eta: next.jaEta || null
+      }, { merge: true })
+      setMeta(next)
+      setMessage('Saved resume metadata.')
+    } catch (err: any) {
+      console.error(err)
+      setError(err?.message || 'Failed to save resume metadata.')
+    } finally {
+      setSavingMeta(false)
     }
   }
 
@@ -221,6 +258,30 @@ export default function AdminResume() {
   return (
     <div className="stack">
       <h2>Resume Content</h2>
+
+      <form className="card form" onSubmit={saveMeta}>
+        <h3>Resume Metadata</h3>
+        <p>These values appear next to the resume download links on the public page.</p>
+        <label>
+          Updated date
+          <input
+            type="date"
+            value={meta.updatedAt}
+            onChange={e => setMeta(prev => ({ ...prev, updatedAt: e.target.value }))}
+          />
+        </label>
+        <label>
+          Japanese PDF target date
+          <input
+            type="date"
+            value={meta.jaEta}
+            onChange={e => setMeta(prev => ({ ...prev, jaEta: e.target.value }))}
+          />
+        </label>
+        <button type="submit" disabled={savingMeta}>
+          {savingMeta ? 'Saving…' : 'Save Metadata'}
+        </button>
+      </form>
 
       <form className="card form" onSubmit={saveSummary}>
         <h3>Résumé Summary</h3>
