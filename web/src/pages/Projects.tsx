@@ -1,11 +1,11 @@
 import { Link, useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
-import { listProjects, type ProjectRecord } from '../lib/content'
+import { getPublicDoc, listProjects, type ProjectRecord } from '../lib/content'
 import {
-  CORE_ROLE_HEADLINE,
   localizedValue,
   prioritizeProjects,
   projectNarrative,
+  resolveSharedProfileCopy,
   selectPortfolioProjects
 } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
@@ -15,12 +15,15 @@ import { useSeo } from '../lib/seo'
 import type { AppShellContext } from '../components/Layout'
 
 type ProjectsLoaderData = {
-  projects: Promise<ProjectRecord[]>
+  projects: Promise<{
+    items: ProjectRecord[]
+    roleHeadline: { en: string; ja: string }
+  }>
 }
 
 export function loader() {
   return {
-    projects: listProjects()
+    projects: loadProjectsPageData()
   }
 }
 
@@ -48,11 +51,14 @@ function ProjectsContent({
   language,
   displayName
 }: {
-  promise: Promise<ProjectRecord[]>
+  promise: Promise<{
+    items: ProjectRecord[]
+    roleHeadline: { en: string; ja: string }
+  }>
   language: 'en' | 'ja'
   displayName: string
 }) {
-  const projects = use(promise)
+  const { items: projects, roleHeadline } = use(promise)
   const curated = selectPortfolioProjects(projects, 4)
   const remainingIds = new Set(curated.map(project => project.id))
   const additional = prioritizeProjects(projects).filter(project => !remainingIds.has(project.id))
@@ -60,8 +66,8 @@ function ProjectsContent({
   useSeo({
     title: `${displayName} | ${language === 'ja' ? 'プロジェクト' : 'Projects'}`,
     description: language === 'ja'
-      ? 'バックエンド / プラットフォーム領域を中心にした case studies。API、データシステム、CI/CD、クラウド運用、出荷済みプロダクトを扱います。'
-      : 'Case studies centered on backend/platform engineering, shipped products, APIs, data systems, CI/CD, and cloud operations.',
+      ? 'バックエンド / プラットフォーム領域の実務ポートフォリオ。API、データシステム、CI/CD、クラウド運用、出荷済みプロダクトを扱います。'
+      : 'Professional portfolio covering backend/platform work across shipped products, APIs, data systems, CI/CD, and cloud operations.',
     path: '/projects'
   })
 
@@ -70,7 +76,7 @@ function ProjectsContent({
       <section className="stack">
         <section className="card page-intro">
           <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Projects'}</p>
-          <h1>{language === 'ja' ? '事例は準備中です' : 'Case studies are being prepared'}</h1>
+          <h1>{language === 'ja' ? 'プロジェクトは準備中です' : 'Projects are being prepared'}</h1>
         </section>
       </section>
     )
@@ -80,18 +86,18 @@ function ProjectsContent({
     <article className="stack">
       <section className="card page-intro">
         <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Projects'}</p>
-        <h1>{language === 'ja' ? '採用担当者向けの case studies' : 'Case studies for hiring review'}</h1>
-        <p className="lead-text">{localizedValue(CORE_ROLE_HEADLINE, language)}</p>
+        <h1>{language === 'ja' ? '実務ポートフォリオ' : 'Professional portfolio'}</h1>
+        <p className="lead-text">{localizedValue(roleHeadline, language)}</p>
         <p>
           {language === 'ja'
-            ? 'ここでは、Jaron Rosenau の公開プロジェクトを、問題設定、担当範囲、アーキテクチャ、運用シグナルが見える形で整理しています。'
-            : 'This page prioritizes the public work that best shows Jaron Rosenau as a backend/platform engineer with end-to-end ownership.'}
+            ? 'ここでは、Jaron Rosenau の公開プロジェクトを、システム設計、担当範囲、アーキテクチャ、運用シグナルが見える形で整理しています。'
+            : 'This page organizes public projects around the systems, architecture, delivery work, and operating signals behind them.'}
         </p>
       </section>
       <section className="stack">
         <div className="section-heading">
-          <p className="eyebrow">{language === 'ja' ? '代表事例' : 'Flagship work'}</p>
-          <h2>{language === 'ja' ? '優先して見るべき 4 件' : 'Four projects that best explain the story'}</h2>
+          <p className="eyebrow">{language === 'ja' ? '注目プロジェクト' : 'Featured projects'}</p>
+          <h2>{language === 'ja' ? '主なプロジェクト' : 'Portfolio highlights'}</h2>
         </div>
         <div className="case-study-grid">
           {curated.map((project, index) => (
@@ -145,6 +151,15 @@ function ProjectsContent({
   )
 }
 
+async function loadProjectsPageData() {
+  const [items, home] = await Promise.all([listProjects(), getPublicDoc('home')])
+  const sharedProfile = resolveSharedProfileCopy(home as Record<string, unknown> | null)
+  return {
+    items,
+    roleHeadline: sharedProfile.headline
+  }
+}
+
 function CaseStudyCard({
   project,
   language,
@@ -178,7 +193,7 @@ function CaseStudyCard({
         </div>
       )}
       <div className="card-body">
-        <p className="eyebrow">{language === 'ja' ? 'Case Study' : 'Case Study'}</p>
+        <p className="eyebrow">{language === 'ja' ? 'プロジェクト' : 'Project'}</p>
         <h2>
           <Link to={`/projects/${encodeURIComponent(project.id)}`} prefetch="intent">
             {title}

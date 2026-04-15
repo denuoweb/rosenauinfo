@@ -3,11 +3,8 @@ import { Suspense, use } from 'react'
 import { getPublicDoc, type LocalizedText } from '../lib/content'
 import {
   ABOUT_DEFAULTS,
-  CORE_ROLE_HEADLINE,
-  CORE_SUPPORTING_COPY,
-  DEFAULT_PROFILE_LINKS,
-  SECONDARY_SPECIALIZATION,
-  localizedValue
+  localizedValue,
+  resolveSharedProfileCopy
 } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { absoluteSiteUrl, useSeo } from '../lib/seo'
@@ -23,7 +20,10 @@ type AboutCopy = {
   headline: LocalizedText
   intro: LocalizedText
   sections: AboutSectionCopy[]
-  links: ProfileLink[]
+  links: {
+    en: ProfileLink[]
+    ja: ProfileLink[]
+  }
 }
 
 type AboutLoaderData = {
@@ -65,17 +65,16 @@ function AboutContent({
 }) {
   const about = use(promise)
   const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
-  const headline = localizedValue(about.headline, language, localizedValue(CORE_ROLE_HEADLINE, language))
-  const intro = localizedValue(
-    about.intro,
-    language,
-    `${localizedValue(CORE_SUPPORTING_COPY, language)} ${localizedValue(SECONDARY_SPECIALIZATION, language)}`
-  )
-  const links = dedupeLinks([...site.profileLinks, ...about.links, ...DEFAULT_PROFILE_LINKS])
+  const headline = localizedValue(about.headline, language)
+  const intro = localizedValue(about.intro, language)
+  const localizedLinks = language === 'ja'
+    ? (about.links.ja.length ? about.links.ja : about.links.en)
+    : (about.links.en.length ? about.links.en : about.links.ja)
+  const links = dedupeLinks([...site.profileLinks, ...localizedLinks])
 
   useSeo({
     title: `${displayName} | ${language === 'ja' ? '紹介' : 'About'}`,
-    description: `${headline} ${localizedValue(CORE_SUPPORTING_COPY, language)}`,
+    description: `${headline} ${intro}`.trim(),
     path: '/about',
     structuredData: {
       '@context': 'https://schema.org',
@@ -138,8 +137,9 @@ function AboutContent({
 }
 
 async function loadAboutCopy(): Promise<AboutCopy> {
-  const doc = await getPublicDoc('about')
+  const [doc, home] = await Promise.all([getPublicDoc('about'), getPublicDoc('home')])
   const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
+  const sharedProfile = resolveSharedProfileCopy(home as Record<string, unknown> | null)
   const parseLines = (value: unknown) =>
     pick(value)
       .split('\n')
@@ -178,29 +178,38 @@ async function loadAboutCopy(): Promise<AboutCopy> {
 
   return {
     headline: {
-      en: pick(doc?.headline_en),
-      ja: pick(doc?.headline_ja)
+      en: pick(doc?.headline_en) || sharedProfile.headline.en,
+      ja: pick(doc?.headline_ja) || sharedProfile.headline.ja
     },
     intro: {
-      en: pick(doc?.intro_en),
-      ja: pick(doc?.intro_ja)
+      en: pick(doc?.intro_en) || `${sharedProfile.supporting.en} ${sharedProfile.secondarySpecialization.en}`.trim(),
+      ja: pick(doc?.intro_ja) || `${sharedProfile.supporting.ja} ${sharedProfile.secondarySpecialization.ja}`.trim()
     },
     sections: [
       sectionFromDoc(
         defaults[0].id,
-        defaults[0].title,
+        {
+          en: pick(doc?.what_i_do_title_en) || defaults[0].title.en,
+          ja: pick(doc?.what_i_do_title_ja) || defaults[0].title.ja
+        },
         parseLines(doc?.what_i_do_en),
         parseLines(doc?.what_i_do_ja)
       ),
       sectionFromDoc(
         defaults[1].id,
-        defaults[1].title,
+        {
+          en: pick(doc?.what_ive_shipped_title_en) || defaults[1].title.en,
+          ja: pick(doc?.what_ive_shipped_title_ja) || defaults[1].title.ja
+        },
         parseLines(doc?.what_ive_shipped_en),
         parseLines(doc?.what_ive_shipped_ja)
       ),
       sectionFromDoc(
         defaults[2].id,
-        defaults[2].title,
+        {
+          en: pick(doc?.what_i_work_well_on_title_en) || defaults[2].title.en,
+          ja: pick(doc?.what_i_work_well_on_title_ja) || defaults[2].title.ja
+        },
         parseLines(doc?.what_i_work_well_on_en),
         parseLines(doc?.what_i_work_well_on_ja)
       )
@@ -211,7 +220,10 @@ async function loadAboutCopy(): Promise<AboutCopy> {
         ja: section.items.ja.length ? section.items.ja : defaults[index].items.ja
       }
     })),
-    links: parseLinks(doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as)
+    links: {
+      en: parseLinks(doc?.links_en ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as),
+      ja: parseLinks(doc?.links_ja ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as)
+    }
   }
 }
 

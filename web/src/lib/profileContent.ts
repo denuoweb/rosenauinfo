@@ -19,6 +19,12 @@ export type ResumeSection = {
   items: LocalizedList
 }
 
+export type SharedProfileCopy = {
+  headline: LocalizedText
+  supporting: LocalizedText
+  secondarySpecialization: LocalizedText
+}
+
 export type ProjectNarrative = {
   key: string
   priority: number
@@ -49,6 +55,8 @@ export const DEFAULT_PROFILE_LINKS = [
   { label: 'GitHub', url: 'https://github.com/denuoweb' },
   { label: 'LinkedIn', url: 'https://www.linkedin.com/in/jaronrosenau/' }
 ]
+
+const pick = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
 const PROJECT_NARRATIVES: Record<string, ProjectNarrative> = {
   crowdpmplatform: {
@@ -294,6 +302,27 @@ export const RESUME_DEFAULTS = {
 export function localizedValue(value: LocalizedText, language: SupportedLanguage, fallback = '') {
   const primary = language === 'ja' ? value.ja || value.en : value.en || value.ja
   return primary || fallback
+}
+
+export function resolveSharedProfileCopy(home: Record<string, unknown> | null | undefined): SharedProfileCopy {
+  const fallbackHeadline = pick(home?.headline)
+  const fallbackSupporting = pick(home?.supporting ?? home?.blurb)
+  const fallbackSecondary = pick(home?.secondary ?? home?.secondary_specialization)
+
+  return {
+    headline: {
+      en: pick(home?.headline_en) || fallbackHeadline || CORE_ROLE_HEADLINE.en,
+      ja: pick(home?.headline_ja) || fallbackHeadline || CORE_ROLE_HEADLINE.ja
+    },
+    supporting: {
+      en: pick(home?.supporting_en ?? home?.blurb_en) || fallbackSupporting || CORE_SUPPORTING_COPY.en,
+      ja: pick(home?.supporting_ja ?? home?.blurb_ja) || fallbackSupporting || CORE_SUPPORTING_COPY.ja
+    },
+    secondarySpecialization: {
+      en: pick(home?.secondary_en ?? home?.secondary_specialization_en) || fallbackSecondary || SECONDARY_SPECIALIZATION.en,
+      ja: pick(home?.secondary_ja ?? home?.secondary_specialization_ja) || fallbackSecondary || SECONDARY_SPECIALIZATION.ja
+    }
+  }
 }
 
 function normalizeKey(value: string) {

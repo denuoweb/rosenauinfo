@@ -12,7 +12,10 @@ type ContactLoaderData = {
 type ContactCopy = {
   intro: { en: string; ja: string }
   availability: { en: string; ja: string }
-  links: ProfileLink[]
+  links: {
+    en: ProfileLink[]
+    ja: ProfileLink[]
+  }
 }
 
 export function loader() {
@@ -54,15 +57,14 @@ function ContactContent({
   const introRaw = language === 'ja'
     ? (contact.intro.ja || contact.intro.en)
     : (contact.intro.en || contact.intro.ja)
-  const intro = introRaw || (
-    language === 'ja'
-      ? `${displayName}へのお問い合わせはこちらからお願いします。`
-      : `Reach out to ${displayName} for engineering opportunities, project collaboration, or consulting work.`
-  )
+  const intro = normalizeContactIntro(introRaw, displayName, language)
   const availability = language === 'ja'
     ? (contact.availability.ja || contact.availability.en)
     : (contact.availability.en || contact.availability.ja)
-  const links = dedupeLinks([...site.profileLinks, ...contact.links])
+  const localizedLinks = language === 'ja'
+    ? (contact.links.ja.length ? contact.links.ja : contact.links.en)
+    : (contact.links.en.length ? contact.links.en : contact.links.ja)
+  const links = dedupeLinks([...site.profileLinks, ...localizedLinks])
   const emailLabel = language === 'ja' ? 'メールで連絡' : 'Email'
 
   useSeo({
@@ -133,7 +135,10 @@ async function loadContactCopy(): Promise<ContactCopy> {
       en: pick(doc?.availability_en ?? doc?.availability),
       ja: pick(doc?.availability_ja ?? doc?.availability)
     },
-    links: parseLinks(doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as)
+    links: {
+      en: parseLinks(doc?.links_en ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as),
+      ja: parseLinks(doc?.links_ja ?? doc?.links ?? doc?.profile_links ?? doc?.sameAs ?? doc?.same_as)
+    }
   }
 }
 
@@ -182,6 +187,19 @@ function dedupeLinks(links: ProfileLink[]): ProfileLink[] {
     }
   })
   return Array.from(map.values())
+}
+
+function normalizeContactIntro(value: string, displayName: string, language: 'en' | 'ja') {
+  const trimmed = value.trim()
+  const fallback = language === 'ja'
+    ? `${displayName}へのご連絡は、協業、コンサルティング、またはバックエンド / プラットフォーム領域のご相談についてどうぞ。`
+    : `Reach out to ${displayName} about project collaboration, consulting work, or backend/platform systems.`
+
+  if (!trimmed) return fallback
+  if (/\bhiring\b|\bhire\b|\brecruit\w*\b|\brole(?:s)?\b|\bopportunit(?:y|ies)\b|採用/i.test(trimmed)) {
+    return fallback
+  }
+  return trimmed
 }
 
 function ContactSkeleton() {

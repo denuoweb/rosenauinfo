@@ -32,7 +32,7 @@ const mockDocs: Record<string, any> = {
   site: {
     name_en: 'Jaron Rosenau',
     name_ja: 'ジャロン・ローゼナウ',
-    footerNote: 'Built around shipped systems, not generic portfolio copy.',
+    footerNote: 'Professional portfolio centered on shipped systems.',
     contactEmail: 'jaron@rosenau.info',
     github_url: 'https://github.com/denuoweb',
     linkedin_url: 'https://www.linkedin.com/in/jaronrosenau'
@@ -43,8 +43,8 @@ const mockDocs: Record<string, any> = {
     supporting_en: 'I build and operate Python/TypeScript systems across APIs, data workflows, CI/CD, cloud infrastructure, and user-facing web products.',
     supporting_ja: 'API、データワークフロー、CI/CD、クラウド基盤、ユーザー向け Web プロダクトまで、Python / TypeScript のシステムを構築・運用しています。',
     featured_project_ids: ['crowdpm-platform', 'quest-by-cycle', 'arm64-adk'],
-    links_en: 'Resume | /resume\nProjects / Case Studies | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau',
-    links_ja: '履歴書 | /resume\nプロジェクト / 事例 | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau'
+    links_en: 'Resume | /resume\nProjects | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau',
+    links_ja: '履歴書 | /resume\nプロジェクト | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau'
   },
   about: {
     headline_en: 'Backend / Platform Engineer',
@@ -59,8 +59,8 @@ const mockDocs: Record<string, any> = {
     what_i_work_well_on_ja: '実運用上の制約があるプロダクトに対するバックエンド / プラットフォーム開発。\nAPI、認証、データワークフロー、CI/CD、Linux、クラウド基盤。\n地図、センサー、構造化フィールドデータが重要な地理空間・シビック・リサーチ隣接のシステム。'
   },
   contact: {
-    intro_en: 'Reach out about backend/platform engineering roles, shipped product work, or research-adjacent systems.',
-    intro_ja: 'バックエンド / プラットフォーム領域の採用、実運用プロダクト、またはリサーチ隣接システムについてご連絡ください。',
+    intro_en: 'Reach out about project collaboration, consulting work, or backend/platform systems.',
+    intro_ja: '協業、コンサルティング、またはバックエンド / プラットフォーム領域のご相談についてご連絡ください。',
     availability_en: 'Typically responds within 1-2 business days.',
     availability_ja: '通常 1-2 営業日以内に返信します。'
   },

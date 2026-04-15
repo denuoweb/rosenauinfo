@@ -2,12 +2,9 @@ import { Link, useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
 import { getPublicDoc, listProjects, type LocalizedText, type ProjectRecord } from '../lib/content'
 import {
-  CORE_ROLE_HEADLINE,
-  CORE_SUPPORTING_COPY,
-  DEFAULT_PROFILE_LINKS,
-  SECONDARY_SPECIALIZATION,
   localizedValue,
   projectNarrative,
+  resolveSharedProfileCopy,
   selectFeaturedProjects
 } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
@@ -22,6 +19,7 @@ type HomeLink = {
 type HomeCopy = {
   headline: LocalizedText
   supporting: LocalizedText
+  secondarySpecialization: LocalizedText
   links: {
     en: HomeLink[]
     ja: HomeLink[]
@@ -69,15 +67,16 @@ function HomeContent({
 }) {
   const copy = use(promise)
   const displayName = language === 'ja' ? (site.name.ja || site.name.en) : (site.name.en || site.name.ja)
-  const headline = localizedValue(copy.headline, language, localizedValue(CORE_ROLE_HEADLINE, language))
-  const supporting = localizedValue(copy.supporting, language, localizedValue(CORE_SUPPORTING_COPY, language))
-  const specialty = localizedValue(SECONDARY_SPECIALIZATION, language)
+  const headline = localizedValue(copy.headline, language)
+  const supporting = localizedValue(copy.supporting, language)
+  const specialty = localizedValue(copy.secondarySpecialization, language)
   const ctas = buildHomeCtas(copy, site, language)
+  const sameAs = buildHomeSameAs(copy, site, language)
   const featuredProjects = selectFeaturedProjects(copy.projects, copy.featuredProjectIds, 3)
   const description = `${headline} ${supporting}`
 
   useSeo({
-    title: `${displayName} | Backend / Platform Engineer`,
+    title: `${displayName} | ${headline}`,
     description,
     path: '/',
     structuredData: {
@@ -87,9 +86,7 @@ function HomeContent({
       url: absoluteSiteUrl('/'),
       jobTitle: headline,
       description,
-      sameAs: ctas
-        .map(link => normalizeExternalUrl(link.url))
-        .filter((url): url is string => Boolean(url))
+      sameAs
     }
   })
 
@@ -125,8 +122,8 @@ function HomeContent({
 
       <section className="proof-section">
         <div className="section-heading">
-          <p className="eyebrow">{language === 'ja' ? '主な実績' : 'Selected proof'}</p>
-          <h2>{language === 'ja' ? '採用担当者向けの代表事例' : 'Flagship systems for hiring review'}</h2>
+          <p className="eyebrow">{language === 'ja' ? 'ポートフォリオ' : 'Portfolio'}</p>
+          <h2>{language === 'ja' ? '主なプロジェクト' : 'Selected projects'}</h2>
         </div>
         <div className="proof-grid">
           {featuredProjects.map(project => {
@@ -174,7 +171,7 @@ function HomeContent({
                 )}
                 <div className="project-actions">
                   <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button ghost" prefetch="intent">
-                    {language === 'ja' ? '事例を見る' : 'View case study'}
+                    {language === 'ja' ? 'プロジェクトを見る' : 'View project'}
                   </Link>
                   {project.url && (
                     <a href={project.url} target="_blank" rel="noopener noreferrer" className="button secondary">
@@ -199,6 +196,7 @@ function HomeContent({
 async function loadHomeCopy(): Promise<HomeCopy> {
   const [home, projects] = await Promise.all([getPublicDoc('home'), listProjects()])
   const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
+  const sharedProfile = resolveSharedProfileCopy(home as Record<string, unknown> | null)
 
   const parseLinks = (raw: string) =>
     raw
@@ -225,14 +223,9 @@ async function loadHomeCopy(): Promise<HomeCopy> {
   }
 
   return {
-    headline: {
-      en: pick(home?.headline_en),
-      ja: pick(home?.headline_ja)
-    },
-    supporting: {
-      en: pick(home?.supporting_en),
-      ja: pick(home?.supporting_ja)
-    },
+    headline: sharedProfile.headline,
+    supporting: sharedProfile.supporting,
+    secondarySpecialization: sharedProfile.secondarySpecialization,
     links: {
       en: parseLinks(pick(home?.links_en)),
       ja: parseLinks(pick(home?.links_ja))
@@ -242,13 +235,30 @@ async function loadHomeCopy(): Promise<HomeCopy> {
   }
 }
 
-function buildHomeCtas(copy: HomeCopy, site: AppShellContext['site'], language: 'en' | 'ja') {
-  const localizedLinks = language === 'ja'
+function getLocalizedHomeLinks(copy: HomeCopy, language: 'en' | 'ja') {
+  return language === 'ja'
     ? (copy.links.ja.length ? copy.links.ja : copy.links.en)
     : (copy.links.en.length ? copy.links.en : copy.links.ja)
+}
 
-  const provided = [...localizedLinks]
-  const defaultProfiles = [...site.profileLinks, ...DEFAULT_PROFILE_LINKS].filter(link => Boolean(link.url))
+function isLinkedInLink(link: HomeLink | ProfileLink) {
+  return /linkedin/i.test(link.label) || /linkedin\.com/i.test(link.url)
+}
+
+function normalizeHomeLinkKey(value: string) {
+  if (!value) return ''
+  if (isInternalHref(value)) {
+    const path = value.split(/[?#]/, 1)[0].replace(/\/+$/, '')
+    return path || '/'
+  }
+  return normalizeExternalUrl(value) || value.trim()
+}
+
+function buildHomeCtas(copy: HomeCopy, site: AppShellContext['site'], language: 'en' | 'ja') {
+  const provided = getLocalizedHomeLinks(copy, language)
+    .filter(link => !isLinkedInLink(link))
+  const defaultProfiles = [...site.profileLinks]
+    .filter(link => Boolean(link.url) && !isLinkedInLink(link))
   const findProfile = (matcher: (link: ProfileLink | HomeLink) => boolean) =>
     provided.find(matcher)?.url ||
     defaultProfiles.find(matcher)?.url ||
@@ -260,29 +270,33 @@ function buildHomeCtas(copy: HomeCopy, site: AppShellContext['site'], language: 
       url: '/resume'
     },
     {
-      label: language === 'ja' ? 'プロジェクト / 事例' : 'Projects / Case Studies',
+      label: language === 'ja' ? 'プロジェクト' : 'Projects',
       url: '/projects'
     },
     {
       label: 'GitHub',
       url: findProfile(link => /github/i.test(link.label) || /github\.com/i.test(link.url))
-    },
-    {
-      label: 'LinkedIn',
-      url: findProfile(link => /linkedin/i.test(link.label) || /linkedin\.com/i.test(link.url))
     }
   ]
 
   const deduped = new Map<string, HomeLink>()
   ;[...ctas, ...provided].forEach(link => {
     if (!link.url) return
-    const key = `${link.label.toLowerCase()}::${link.url}`
+    const key = normalizeHomeLinkKey(link.url)
     if (!deduped.has(key)) {
       deduped.set(key, link)
     }
   })
 
   return Array.from(deduped.values()).slice(0, 6)
+}
+
+function buildHomeSameAs(copy: HomeCopy, site: AppShellContext['site'], language: 'en' | 'ja') {
+  const externalUrls = [...getLocalizedHomeLinks(copy, language), ...site.profileLinks]
+    .map(link => normalizeExternalUrl(link.url))
+    .filter((url): url is string => Boolean(url))
+
+  return Array.from(new Set(externalUrls))
 }
 
 function isInternalHref(value: string) {

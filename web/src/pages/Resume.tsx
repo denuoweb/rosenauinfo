@@ -2,10 +2,9 @@ import { useLoaderData, useOutletContext } from 'react-router-dom'
 import { Suspense, use } from 'react'
 import { getPublicDoc, type LocalizedText } from '../lib/content'
 import {
-  CORE_ROLE_HEADLINE,
   RESUME_DEFAULTS,
-  SECONDARY_SPECIALIZATION,
-  localizedValue
+  localizedValue,
+  resolveSharedProfileCopy
 } from '../lib/profileContent'
 import { useLanguage } from '../lib/language'
 import { useSeo } from '../lib/seo'
@@ -22,6 +21,8 @@ type ResumeCopy = {
   jaUrl?: string
   updatedAt?: string
   jaEta?: string
+  roleHeadline: LocalizedText
+  secondarySpecialization: LocalizedText
   summary: { en: string[]; ja: string[] }
   sections: ResumeSectionEntry[]
 }
@@ -81,7 +82,7 @@ function ResumeContent({
   const etaCopy = language === 'ja'
     ? (resume.jaEta ? `公開予定日: ${resume.jaEta}` : null)
     : (resume.jaEta ? `Target publish date: ${resume.jaEta}` : null)
-  const description = `${localizedValue(CORE_ROLE_HEADLINE, language)} ${summaryParagraphs[1] || ''}`.trim()
+  const description = `${localizedValue(resume.roleHeadline, language)} ${summaryParagraphs[1] || ''}`.trim()
 
   useSeo({
     title: `${displayName} | ${language === 'ja' ? '履歴書' : 'Resume'}`,
@@ -93,7 +94,7 @@ function ResumeContent({
     <article className="resume-page">
       <section className="card resume-hero-card">
         <p className="eyebrow">{language === 'ja' ? '履歴書' : 'Resume'}</p>
-        <h1>{localizedValue(CORE_ROLE_HEADLINE, language)}</h1>
+        <h1>{localizedValue(resume.roleHeadline, language)}</h1>
         <p className="lead-text">{summaryParagraphs[1] || summaryParagraphs[0]}</p>
         <div className="resume-highlight-grid">
           {buildResumeHighlights(language).map(card => (
@@ -137,15 +138,16 @@ function ResumeContent({
 
       <section className="resume-section">
         <h2>{language === 'ja' ? '副次的な専門領域' : 'Secondary specialization'}</h2>
-        <p>{localizedValue(SECONDARY_SPECIALIZATION, language)}</p>
+        <p>{localizedValue(resume.secondarySpecialization, language)}</p>
       </section>
     </article>
   )
 }
 
 async function loadResumeCopy(): Promise<ResumeCopy> {
-  const doc = await getPublicDoc('resume')
+  const [doc, home] = await Promise.all([getPublicDoc('resume'), getPublicDoc('home')])
   const pick = (value: unknown) => typeof value === 'string' ? value.trim() : ''
+  const sharedProfile = resolveSharedProfileCopy(home as Record<string, unknown> | null)
   const isArrayOfStrings = (value: unknown): value is string[] =>
     Array.isArray(value) && value.every(item => typeof item === 'string')
   const parseParagraphs = (value: unknown) =>
@@ -168,6 +170,8 @@ async function loadResumeCopy(): Promise<ResumeCopy> {
     jaUrl: pick(doc?.url_ja ?? doc?.url) || undefined,
     updatedAt: pick(doc?.updatedAt ?? doc?.updated_at),
     jaEta: pick(doc?.ja_eta ?? doc?.eta_ja ?? doc?.jaTargetDate),
+    roleHeadline: sharedProfile.headline,
+    secondarySpecialization: sharedProfile.secondarySpecialization,
     summary: {
       en: parseParagraphs(doc?.summary_en ?? doc?.summary),
       ja: parseParagraphs(doc?.summary_ja ?? doc?.summary)
