@@ -12,7 +12,8 @@ Use it as a checklist when you’re ready to launch or redeploy.
 ## 1. Build & Deploy the Site
 
 ### Prerequisites
-- Node.js 18 (or newer) and npm installed locally
+- Node.js 24 for the web app (`.nvmrc`) and Node.js 22 for Firebase Functions (`functions/.nvmrc`)
+- npm installed locally
 - Firebase CLI installed globally (`npm i -g firebase-tools`)
 - Logged into the Firebase CLI (`firebase login`)
 - Firebase project already created and matching config values in `web/.env`
@@ -20,6 +21,7 @@ Use it as a checklist when you’re ready to launch or redeploy.
 ### Build the Web App
 ```bash
 cd web
+nvm use
 npm install        # first-time only
 npm run build      # outputs production bundle to web/dist
 ```
@@ -37,6 +39,10 @@ firebase deploy --only hosting,firestore,storage
 - `storage` publishes `storage.rules` (required for resume uploads)
 
 > If you change Cloud Functions, run `npm install && npm run build` inside `functions/` before `firebase deploy --only functions`.
+>
+> Current repo/runtime targets:
+> - `web`: Vite 8 on Node 24
+> - `functions`: Firebase Functions on Node 22
 
 ---
 
@@ -70,7 +76,7 @@ Whenever Firebase updates IPs (rare), you’ll receive a notice. Update the Squa
 
 | Issue | Resolution |
 |-------|------------|
-| `firebase deploy` fails with Node version errors | Upgrade local Node (`nvm install 20 && nvm use 20`) before building. |
+| `firebase deploy` fails with Node version errors | Use the repo-pinned versions before building: `nvm use` in the repo root for the web app, and `cd functions && nvm use` for Functions. |
 | Storage uploads throw `storage/unauthorized` | Ensure the admin account is allowed by `storage.rules` (custom claim or UID allowlist) and you’re logged in on the admin UI. Redeploy storage rules if needed. |
 | Domain verification pending | Recheck TXT and A/AAAA records in Squarespace. Use `dig` or DNS checker to confirm they match Firebase instructions. |
 | HTTPS certificate stuck provisioning | Wait up to 24 hours. If it persists, remove/re-add the custom domain or contact Firebase support. |
@@ -82,6 +88,7 @@ Whenever Firebase updates IPs (rare), you’ll receive a notice. Update the Squa
 ```bash
 # Build web app
 cd web
+nvm use
 npm run build
 
 # Deploy hosting + rules
@@ -90,6 +97,7 @@ firebase deploy --only hosting,firestore,storage
 
 # (Optional) Deploy functions
 cd functions
+nvm use
 npm install
 npm run build
 cd ..

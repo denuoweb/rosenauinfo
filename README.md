@@ -1,4 +1,4 @@
-# Personal Site on Firebase (React 19 + Vite 5 + TS)
+# Personal Site on Firebase (React 19 + Vite 8 + TS)
 SPA with theme switching and Firebase Functions.
 
 ## Structure
@@ -12,7 +12,7 @@ SPA with theme switching and Firebase Functions.
 3. `cd ../functions && nvm use && npm i && npm run build`
 4. At repo root: `firebase deploy`
 
-> The root `.nvmrc` pins Node 24 for the Vite app. `functions/.nvmrc` pins Node 18 to match the Firebase Functions runtime—run `nvm use` after `cd functions` so installs/builds use the correct engine and avoid `EBADENGINE` warnings.
+> The root `.nvmrc` pins Node 24 for the Vite app. `functions/.nvmrc` pins Node 22 to match the Firebase Functions runtime in `firebase.json` and `functions/package.json`. Run `nvm use` after `cd` into each directory so installs/builds use the expected engine and avoid `EBADENGINE` warnings.
 
 ## Admin Panel
 - Enable **Email/Password** sign-in in Firebase Authentication and create an admin user.
