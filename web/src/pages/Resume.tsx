@@ -98,6 +98,24 @@ function ResumeContent({
         <p className="eyebrow">{language === 'ja' ? '履歴書' : 'Resume'}</p>
         <h1>{localizedValue(resume.roleHeadline, language)}</h1>
         <p className="lead-text">{summaryParagraphs[1] || summaryParagraphs[0]}</p>
+        {url && (
+          <div className="resume-download resume-download--hero">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button primary resume-download-button"
+            >
+              {language === 'ja' ? '履歴書 PDF をダウンロード' : 'Download Resume PDF'}
+            </a>
+          </div>
+        )}
+        {(updatedCopy || etaCopy) && (
+          <div className="resume-download-row">
+            {updatedCopy && <p className="muted resume-meta">{updatedCopy}</p>}
+            {etaCopy && <p className="muted resume-meta">{etaCopy}</p>}
+          </div>
+        )}
         <div className="resume-highlight-grid">
           {buildResumeHighlights(language).map(card => (
             <article key={card.title} className="mini-card">
@@ -105,17 +123,6 @@ function ResumeContent({
               <p>{card.body}</p>
             </article>
           ))}
-        </div>
-        <div className="resume-download-row">
-          {url && (
-            <div className="resume-download">
-              <a href={url} target="_blank" rel="noopener noreferrer">
-                {language === 'ja' ? '履歴書 PDF を開く' : 'Open resume PDF'}
-              </a>
-            </div>
-          )}
-          {updatedCopy && <p className="muted resume-meta">{updatedCopy}</p>}
-          {etaCopy && <p className="muted resume-meta">{etaCopy}</p>}
         </div>
         {summaryParagraphs.map((paragraph, index) => (
           <p key={`summary-${index}`}>{paragraph}</p>

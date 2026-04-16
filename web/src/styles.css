@@ -199,6 +199,10 @@ pre, code {
   display: grid;
   gap: .55rem;
 }
+.mini-card,
+.resume-section {
+  min-width: 0;
+}
 .proof-point-card p,
 .workflow-card h3,
 .workflow-card p {
@@ -496,6 +500,18 @@ pre, code {
   background: rgba(14,165,233,0.16);
   color: var(--accent-color);
 }
+.contact-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .85rem 1rem;
+  align-items: center;
+}
+.contact-action-row .resume-download {
+  margin-top: 0;
+}
+.contact-links {
+  margin-top: 0;
+}
 
 .resume-download {
   margin-top: 1.5rem;
@@ -514,6 +530,15 @@ pre, code {
 .resume-download a:hover {
   background:rgba(14,165,233,0.12);
   color:var(--accent-color);
+}
+.resume-download--hero {
+  margin-top: .25rem;
+}
+.resume-download .resume-download-button {
+  padding: .8rem 1.35rem;
+  border-color: rgba(14,165,233,0.3);
+  box-shadow: 0 10px 28px rgba(14,165,233,0.2);
+  font-weight: 700;
 }
 .resume-page {
   display:grid;
@@ -714,7 +739,11 @@ pre, code {
   background: linear-gradient(135deg, rgba(14,165,233,0.18), rgba(34,211,238,0.14));
   border-color: rgba(14,165,233,0.22);
 }
-.button.secondary { border-color: rgba(14,165,233,0.25); }
+.button.secondary {
+  background: rgba(14,165,233,0.08);
+  border-color: rgba(14,165,233,0.3);
+  font-weight: 600;
+}
 .button.ghost {
   background: transparent;
   border-color: rgba(14,165,233,0.2);
@@ -862,6 +891,10 @@ label.checkbox-line input { width:auto; }
 }
 
 @media (min-width: 980px) {
+  .workflow-grid,
+  .section-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
   .app-shell--wide .cards,
   .app-shell--wide .case-study-grid,
   .app-shell--wide .compact-cards {

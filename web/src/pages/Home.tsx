@@ -140,7 +140,7 @@ function HomeContent({
       <section className="card">
         <div className="section-heading">
           <p className="eyebrow">{language === 'ja' ? '進め方' : 'How I Work'}</p>
-          <h2>{language === 'ja' ? 'How I Work' : 'How I Work'}</h2>
+          <h2>{language === 'ja' ? '4 ステップの進め方' : 'A four-step delivery flow'}</h2>
         </div>
         <div className="workflow-grid">
           {workflowSteps.map(step => (
@@ -215,7 +215,7 @@ function HomeContent({
                   <div className="tags">{tags.slice(0, 5).map(tag => <span key={tag}>{tag}</span>)}</div>
                 )}
                 <div className="project-actions">
-                  <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button ghost" prefetch="intent">
+                  <Link to={`/projects/${encodeURIComponent(project.id)}`} className="button primary" prefetch="intent">
                     {language === 'ja' ? '事例を見る' : 'View case study'}
                   </Link>
                   {project.url && (
@@ -224,7 +224,7 @@ function HomeContent({
                     </a>
                   )}
                   {project.repo && (
-                    <a href={project.repo} target="_blank" rel="noopener noreferrer" className="button ghost">
+                    <a href={project.repo} target="_blank" rel="noopener noreferrer" className="button secondary">
                       {language === 'ja' ? 'ソースを見る' : 'View source'}
                     </a>
                   )}

@@ -73,6 +73,7 @@ function AboutContent({
     ? (about.links.ja.length ? about.links.ja : about.links.en)
     : (about.links.en.length ? about.links.en : about.links.ja)
   const links = dedupeProfileLinks([...site.profileLinks, ...localizedLinks])
+  const showProfileLinks = links.length > 1
 
   useSeo({
     title: `${displayName} | ${language === 'ja' ? '紹介' : 'About'}`,
@@ -122,7 +123,7 @@ function AboutContent({
         })}
       </div>
 
-      {links.length > 0 && (
+      {showProfileLinks && (
         <section className="resume-section">
           <h2>{language === 'ja' ? 'プロフィール' : 'Profiles'}</h2>
           <div className="home-links">
