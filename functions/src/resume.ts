@@ -290,13 +290,13 @@ function legacySummaryParagraphs(doc: ResumeRecord | null, language: 'en' | 'ja'
 function buildExecutiveSummary(doc: ResumeRecord | null, language: 'en' | 'ja', displayName: string): string[] {
   const fallbackPrimary = localizedText(
     language,
-    `${displayName} is an Implementation / Integration Engineer.`,
-    `${displayName} は、実装 / 連携エンジニアです。`
+    `${displayName} is an Implementation / Developer Support Engineer.`,
+    `${displayName} は、実装 / 開発者サポートエンジニアです。`
   )
   const fallbackSecondary = localizedText(
     language,
-    'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.',
-    '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。'
+    'I build, integrate, debug, document, deploy, and support API-driven web systems across Python, TypeScript, Firebase, Cloud Run, PostgreSQL, Linux, and CI/CD.',
+    'Python、TypeScript、Firebase、Cloud Run、PostgreSQL、Linux、CI/CD を使い、API 駆動の Web システムを構築、連携、デバッグ、文書化、デプロイ、サポートします。'
   )
   const docParagraphs = legacySummaryParagraphs(doc, language)
   const secondParagraph = docParagraphs[0] || fallbackSecondary
@@ -310,8 +310,8 @@ function buildHeroCards(language: 'en' | 'ja'): ResumeCard[] {
       title: localizedText(language, 'Primary focus', '主軸'),
       body: localizedText(
         language,
-        'Implementation and integration delivery with ownership from discovery through production support.',
-        '技術調査から本番サポートまで責任を持つ、実装 / 連携 delivery。'
+        'Implementation and developer support delivery with ownership from discovery through production support.',
+        '技術調査から本番サポートまで責任を持つ、実装 / 開発者サポート delivery。'
       )
     },
     {
@@ -331,11 +331,11 @@ function buildHeroCards(language: 'en' | 'ja'): ResumeCard[] {
       )
     },
     {
-      title: localizedText(language, 'AI use', 'AI の使い方'),
+      title: localizedText(language, 'Support scope', 'サポート領域'),
       body: localizedText(
         language,
-        'GPT/Codex as an accelerator for implementation speed, debugging, and documentation.',
-        '実装速度、デバッグ、ドキュメント整備を高めるための GPT/Codex 活用。'
+        'Customer-facing troubleshooting, technical onboarding, runbooks, and escalation-quality bug reproduction.',
+        '顧客向けのトラブルシュート、技術オンボーディング、ランブック、エスカレーション品質の不具合再現。'
       )
     }
   ]
@@ -349,8 +349,8 @@ function buildCuratedSections(language: 'en' | 'ja'): NormalizedSection[] {
       items: [
         localizedText(
           language,
-          'API integration, auth flows, webhooks, background processing, SQL, data validation, and cloud-hosted services.',
-          'API 連携、認証フロー、Webhook、バックグラウンド処理、SQL、データバリデーション、クラウドホスト型サービス。'
+          'API integration, customer-facing technical troubleshooting, auth flows, webhooks, background processing, SQL, data validation, and cloud-hosted services.',
+          'API 連携、顧客向け技術トラブルシュート、認証フロー、Webhook、バックグラウンド処理、SQL、データバリデーション、クラウドホスト型サービス。'
         ),
         localizedText(
           language,
@@ -372,6 +372,11 @@ function buildCuratedSections(language: 'en' | 'ja'): NormalizedSection[] {
           language,
           'QuestByCycle: public Flask/PostgreSQL system with auth, background jobs, deployment, and production support.',
           'QuestByCycle: 認証、バックグラウンドジョブ、デプロイ、本番サポートを含む Flask / PostgreSQL の公開システム。'
+        ),
+        localizedText(
+          language,
+          'Moonshine Art: marketplace implementation case study spanning checkout, seller onboarding, fulfillment, admin/support workflows, and compliance surfaces.',
+          'Moonshine Art: 購入、出品者登録、発送、管理 / サポート、コンプライアンスを含むマーケットプレイス実装ケーススタディ。'
         ),
         localizedText(
           language,
@@ -417,8 +422,8 @@ function buildCuratedSections(language: 'en' | 'ja'): NormalizedSection[] {
         ),
         localizedText(
           language,
-          'Debugging production data and auth issues, plus AI-assisted development with GPT/Codex for implementation speed, debugging, and documentation.',
-          '本番データと認証まわりの不具合調査に加え、実装速度、デバッグ、ドキュメント整備を高めるための GPT/Codex を使った AI 支援開発。'
+          'Customer-facing troubleshooting, technical onboarding, production data/auth debugging, and support runbooks.',
+          '顧客向けトラブルシュート、技術オンボーディング、本番データ / 認証の不具合調査、サポート用ランブック。'
         )
       ]
     }
@@ -437,13 +442,18 @@ function buildShippedSystemsSection(language: 'en' | 'ja'): NormalizedSection {
       ),
       localizedText(
         language,
+        'Moonshine Art: Flutter, Firebase/Firestore, Cloud Run APIs, Stripe Connect, Gelato fulfillment, moderation/admin tooling, support workflows, and compliance surfaces.',
+        'Moonshine Art: Flutter、Firebase / Firestore、Cloud Run API、Stripe Connect、Gelato 発送、モデレーション / 管理ツール、サポートワークフロー、コンプライアンス。'
+      ),
+      localizedText(
+        language,
         'CrowdPM Platform: DPoP-bound ingest, calibration, Fastify APIs, Cloud Storage, Firestore, deck.gl, and Google Maps WebGL.',
         'CrowdPM Platform: DPoP 付き ingest、補正処理、Fastify API、Cloud Storage、Firestore、deck.gl、Google Maps WebGL。'
       ),
       localizedText(
         language,
-        'ARM64-ADK: a Rust/gRPC Linux ARM64 platform with GTK UI, CLI, workflow services, and packaged releases.',
-        'ARM64-ADK: GTK UI、CLI、workflow サービス、配布物を備えた Rust / gRPC の Linux ARM64 プラットフォーム。'
+        'APK Workbench: a Rust/gRPC Linux ARM64 platform with GTK UI, CLI, workflow services, and packaged releases.',
+        'APK Workbench: GTK UI、CLI、workflow サービス、配布物を備えた Rust / gRPC の Linux ARM64 プラットフォーム。'
       ),
       localizedText(
         language,
@@ -522,16 +532,16 @@ function resumeHtml({
         relatedProfiles: 'Related profiles',
         summary: 'Summary'
       }
-  const title = localizedText(language, 'Resume | Implementation / Integration Engineer', '履歴書 | 実装 / 連携エンジニア')
+  const title = localizedText(language, 'Resume | Implementation / Developer Support Engineer', '履歴書 | 実装 / 開発者サポートエンジニア')
   const subtitle = localizedText(
     language,
-    'Implementation / Integration Engineer',
-    '実装 / 連携エンジニア'
+    'Implementation / Developer Support Engineer',
+    '実装 / 開発者サポートエンジニア'
   )
   const description = localizedText(
     language,
-    `${displayName} builds API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.`,
-    `${displayName} は、技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。`
+    `${displayName} builds, integrates, debugs, documents, deploys, and supports API-driven web systems across Python, TypeScript, Firebase, Cloud Run, PostgreSQL, Linux, and CI/CD.`,
+    `${displayName} は Python、TypeScript、Firebase、Cloud Run、PostgreSQL、Linux、CI/CD を使い、API 駆動の Web システムを構築、連携、デバッグ、文書化、デプロイ、サポートします。`
   )
   const downloadLabel = localizedText(language, 'Open résumé PDF', '履歴書 PDF を開く')
   const neutral = localizedText(
@@ -590,7 +600,7 @@ function resumeHtml({
     mainEntity: {
       '@type': 'Person',
       name: displayName,
-      jobTitle: localizedText(language, 'Implementation / Integration Engineer', '実装 / 連携エンジニア'),
+      jobTitle: localizedText(language, 'Implementation / Developer Support Engineer', '実装 / 開発者サポートエンジニア'),
       description,
       knowsAbout: [
         'Python',
@@ -604,7 +614,9 @@ function resumeHtml({
         'cloud operations',
         'production troubleshooting',
         'technical delivery',
-        'AI-assisted development'
+        'developer support',
+        'technical onboarding',
+        'runbooks'
       ],
       ...(sameAsLinks.length > 0 ? { sameAs: sameAsLinks.map(link => link.url) } : {})
     }
@@ -916,15 +928,15 @@ function resumeHtml({
           <div class="topline">
             <div class="hero-copy">
               <p class="eyebrow">${escapeHtml(subtitle)}</p>
-              <h1 id="resume-title">${escapeHtml(`${displayName} | ${localizedText(language, 'Implementation / Integration Engineer', '実装 / 連携エンジニア')}`)}</h1>
+              <h1 id="resume-title">${escapeHtml(`${displayName} | ${localizedText(language, 'Implementation / Developer Support Engineer', '実装 / 開発者サポートエンジニア')}`)}</h1>
             </div>
             <a class="back-link" href="${escapeHtml(baseUrl)}">${escapeHtml(nav.back)}</a>
           </div>
           <p class="lead">${escapeHtml(leadText)}</p>
           <p class="supporting-copy">${escapeHtml(localizedText(
             language,
-            'GPT/Codex is an execution accelerator I use for implementation speed, debugging, and documentation, not the headline value I lead with.',
-            'GPT/Codex は、実装速度、デバッグ、ドキュメント整備を高めるための加速手段であり、主役として前面に出す価値ではありません。'
+            'Open to implementation, developer support, technical support, integration, solutions, and technical operations roles.',
+            '実装、開発者サポート、技術サポート、連携、ソリューション寄りの技術職、技術運用職に関心があります。'
           ))}</p>
           ${metadataHtml ? `<div class="meta-block">${metadataHtml}</div>` : ''}
           <nav class="links" aria-label="${escapeHtml(nav.displayLanguage)}">

@@ -62,7 +62,9 @@ function ProjectsContent({
   const { items: projects, roleHeadline } = use(promise)
   const curated = selectPortfolioProjects(projects, 3)
   const remainingIds = new Set(curated.map(project => project.id))
-  const additional = prioritizeProjects(projects).filter(project => !remainingIds.has(project.id))
+  const additional = prioritizeProjects(projects)
+    .filter(project => !remainingIds.has(project.id))
+    .filter(project => projectNarrative(project).priority < 50)
 
   useSeo({
     title: `${displayName} | ${language === 'ja' ? '事例' : 'Case Studies'}`,

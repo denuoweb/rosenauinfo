@@ -38,34 +38,56 @@ const mockDocs: Record<string, any> = {
     linkedin_url: 'https://www.linkedin.com/in/jaronrosenau'
   },
   home: {
-    headline_en: 'Implementation / Integration Engineer',
-    headline_ja: '実装 / 連携エンジニア',
-    supporting_en: 'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.',
-    supporting_ja: '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。',
-    featured_project_ids: ['quest-by-cycle', 'crowdpm-platform'],
-    links_en: 'Resume | /resume\nCase Studies | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau',
-    links_ja: '履歴書 | /resume\n事例 | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau'
+    headline_en: 'Implementation / Developer Support Engineer',
+    headline_ja: '実装 / 開発者サポートエンジニア',
+    supporting_en: 'I build, integrate, debug, document, deploy, and support API-driven web systems across Python, TypeScript, Firebase, Cloud Run, PostgreSQL, Linux, and CI/CD.',
+    supporting_ja: 'Python、TypeScript、Firebase、Cloud Run、PostgreSQL、Linux、CI/CD を使い、API 駆動の Web システムを構築、連携、デバッグ、文書化、デプロイ、サポートします。',
+    featured_project_ids: ['quest-by-cycle', 'moonshine-art', 'crowdpm-platform'],
+    links_en: 'Resume | /resume\nCase Studies | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau\nContact | /contact',
+    links_ja: '履歴書 | /resume\n事例 | /projects\nGitHub | https://github.com/denuoweb\nLinkedIn | https://www.linkedin.com/in/jaronrosenau\n連絡先 | /contact'
   },
   about: {
-    headline_en: 'Implementation / Integration Engineer',
-    headline_ja: '実装 / 連携エンジニア',
-    intro_en: 'I work on messy implementation problems where requirements, APIs, auth, operations, and production support all need to line up.',
+    headline_en: 'Implementation / Developer Support Engineer',
+    headline_ja: '実装 / 開発者サポートエンジニア',
+    intro_en: 'I work on implementation and developer-support problems where requirements, APIs, auth, operations, documentation, and production support all need to line up.',
     intro_ja: '要件、API、認証、運用、本番サポートを一つの delivery としてそろえる必要がある、複雑な実装案件で力を発揮します。'
   },
   contact: {
-    intro_en: 'Reach out about implementation and integration work, technical delivery, or backend systems.',
-    intro_ja: '実装 / 連携案件、技術導入、またはバックエンド delivery のご相談についてご連絡ください。',
-    availability_en: 'Typically responds within 1-2 business days.',
-    availability_ja: '通常 1-2 営業日以内に返信します。'
+    intro_en: 'Open to Implementation Engineer, Developer Support Engineer, Technical Support Engineer, Integration Engineer, Solutions Engineer, Support Engineer, and technical operations roles.',
+    intro_ja: '実装エンジニア、開発者サポートエンジニア、技術サポート、連携エンジニア、ソリューション寄りの技術職、技術運用職に関心があります。',
+    availability_en: 'Available immediately for part-time or contract work; full-time after June 2026.',
+    availability_ja: 'パートタイム / 契約はすぐ対応可能。フルタイムは 2026 年 6 月以降。'
   },
   resume: {
-    url_en: 'https://example.com/resume-en.pdf',
-    url_ja: 'https://example.com/resume-ja.pdf',
-    updatedAt: '2026-03-19'
+    url_en: '/Jaron_Rosenau_Resume.pdf',
+    url_ja: '/Jaron_Rosenau_Resume.pdf',
+    updatedAt: '2026-05-01'
   }
 }
 
 const mockProjects = [
+  {
+    id: 'moonshine-art',
+    title_en: 'Moonshine Art',
+    title_ja: 'Moonshine Art',
+    description_en: 'Private marketplace implementation case study covering seller onboarding, checkout, fulfillment, moderation, support, and compliance workflows.',
+    description_ja: '出品者登録、購入、発送、モデレーション、サポート、コンプライアンスを含む非公開マーケットプレイス実装のケーススタディ。',
+    problem_en: 'A private art marketplace needed buyer checkout, seller onboarding, fulfillment, admin/support workflows, and compliance surfaces to behave as one supportable system.',
+    problem_ja: '非公開のアートマーケットプレイスでは、購入、出品者登録、発送、管理 / サポート、コンプライアンスを一つの保守可能なシステムとしてつなぐ必要があった。',
+    owned_en: 'Designed and built the implementation architecture across Flutter web, Firebase/Firestore, Cloud Run APIs, Stripe Connect, Gelato fulfillment, moderation/admin tooling, and support workflows.',
+    owned_ja: 'Flutter Web、Firebase / Firestore、Cloud Run API、Stripe Connect、Gelato 発送、モデレーション / 管理ツール、サポートワークフローを横断して設計・実装。',
+    architecture_en: 'Flutter web client, Firebase/Firestore data model, Stripe Connect onboarding, checkout/webhook service, Gelato print fulfillment adapter, Firebase moderation functions, and support/admin routes.',
+    architecture_ja: 'Flutter Web クライアント、Firebase / Firestore データモデル、Stripe Connect 登録、購入 / Webhook サービス、Gelato print fulfillment adapter、Firebase moderation functions、サポート / 管理ルート。',
+    result_en: 'Created a sanitized public case study while keeping source private, with operational documentation for local development, deployment, support, and compliance handoff.',
+    result_ja: 'ソースコードは非公開のまま、公開用のケーススタディと、ローカル開発、デプロイ、サポート、コンプライアンス引き継ぎ用の運用ドキュメントを整備。',
+    url: 'https://denuoweb.com/work/moonshine-art',
+    repo: 'https://github.com/Denuo-Web/moonshine-art-case-study',
+    order: 1,
+    tags_en: ['Flutter', 'Firebase', 'Cloud Run', 'Stripe', 'Firestore'],
+    tags_ja: ['Flutter', 'Firebase', 'Cloud Run', 'Stripe', 'Firestore'],
+    cover: 'https://opengraph.githubassets.com/1/Denuo-Web/moonshine-art-case-study',
+    github_full_name: 'Denuo-Web/moonshine-art-case-study'
+  },
   {
     id: 'crowdpm-platform',
     title_en: 'CrowdPM Platform',
@@ -82,7 +104,7 @@ const mockProjects = [
     result_ja: 'デバイス有効化、MFA 承認、外部向け API、センサーペイロードから地図レイヤーまでの end-to-end パイプラインを備えた live demo を公開。',
     url: 'https://crowdpmplatform.web.app',
     repo: 'https://github.com/Denuo-Web/CrowdPMPlatform',
-    order: 1,
+    order: 3,
     tags_en: ['TypeScript', 'Fastify', 'Firestore', 'deck.gl'],
     tags_ja: ['TypeScript', 'Fastify', 'Firestore', 'deck.gl'],
     cover: 'https://opengraph.githubassets.com/1/Denuo-Web/CrowdPMPlatform',
@@ -111,9 +133,9 @@ const mockProjects = [
     github_full_name: 'Denuo-Web/QuestByCycle'
   },
   {
-    id: 'arm64-adk',
-    title_en: 'ARM64-ADK',
-    title_ja: 'ARM64-ADK',
+    id: 'apk-workbench',
+    title_en: 'APK Workbench',
+    title_ja: 'APK Workbench',
     description_en: 'Multi-service Android development toolkit for Linux ARM64 with GUI, CLI, and packaged releases.',
     description_ja: 'GUI、CLI、パッケージ配布を備えた Linux ARM64 向けの multi-service Android 開発ツールキット。',
     problem_en: 'Android development on Linux ARM64 still lacks first-class tooling when teams need packaging, workflows, and observability instead of ad hoc scripts.',
@@ -124,12 +146,12 @@ const mockProjects = [
     architecture_ja: '12 クレートの Rust workspace、gRPC サービス、GTK4 UI、CLI、JobService event bus、workflow/build/observe サービス、Linux ARM64 向けパッケージ配布。',
     result_en: 'Public v0.1.0 release with .deb and .tar.gz artifacts, a repo-hosted UI demo, and a focused open-source platform for Linux ARM64 Android development.',
     result_ja: '.deb と .tar.gz の公開リリース、repo 上の UI デモ、Linux ARM64 向け Android 開発基盤としてのオープンソース成果物を提供。',
-    repo: 'https://github.com/denuoweb/ARM64-ADK',
-    order: 3,
+    repo: 'https://github.com/Denuo-Web/APK-Workbench',
+    order: 4,
     tags_en: ['Rust', 'gRPC', 'GTK4', 'ARM64'],
     tags_ja: ['Rust', 'gRPC', 'GTK4', 'ARM64'],
-    cover: 'https://opengraph.githubassets.com/1/denuoweb/ARM64-ADK',
-    github_full_name: 'denuoweb/ARM64-ADK'
+    cover: 'https://opengraph.githubassets.com/1/Denuo-Web/APK-Workbench',
+    github_full_name: 'Denuo-Web/APK-Workbench'
   },
   {
     id: 'drip-copy',
@@ -146,7 +168,7 @@ const mockProjects = [
     result_en: 'Turns a flaky hardware problem into a reproducible Linux workflow for extracting files when standard copy tools or whole-disc imaging are too brittle.',
     result_ja: '標準コピーやディスク丸ごとイメージ化が不安定な状況でも、ファイル抽出を再現可能な Linux ワークフローに変える。',
     repo: 'https://github.com/Denuo-Web/DripCopy',
-    order: 4,
+    order: 5,
     tags_en: ['Bash', 'Linux', 'Recovery', 'USB'],
     tags_ja: ['Bash', 'Linux', 'Recovery', 'USB'],
     cover: 'https://opengraph.githubassets.com/1/Denuo-Web/DripCopy',

@@ -151,13 +151,10 @@ async function loadContactCopy(): Promise<ContactCopy> {
 function normalizeContactIntro(value: string, displayName: string, language: 'en' | 'ja') {
   const trimmed = value.trim()
   const fallback = language === 'ja'
-    ? `${displayName}へのご連絡は、実装 / 連携案件、技術導入、またはバックエンド delivery のご相談についてどうぞ。`
-    : `Reach out to ${displayName} about implementation and integration work, technical delivery, or backend systems.`
+    ? `${displayName} は、実装エンジニア、開発者サポートエンジニア、技術サポート、連携エンジニア、ソリューション寄りの技術職、技術運用職に関心があります。`
+    : `${displayName} is open to Implementation Engineer, Developer Support Engineer, Technical Support Engineer, Integration Engineer, Solutions Engineer, Support Engineer, and technical operations roles.`
 
   if (!trimmed) return fallback
-  if (/\bhiring\b|\bhire\b|\brecruit\w*\b|\brole(?:s)?\b|\bopportunit(?:y|ies)\b|採用/i.test(trimmed)) {
-    return fallback
-  }
   return trimmed
 }
 

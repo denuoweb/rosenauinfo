@@ -43,18 +43,18 @@ export type ProjectNarrative = {
 }
 
 export const CORE_ROLE_HEADLINE: LocalizedText = {
-  en: 'Implementation / Integration Engineer',
-  ja: '実装 / 連携エンジニア'
+  en: 'Implementation / Developer Support Engineer',
+  ja: '実装 / 開発者サポートエンジニア'
 }
 
 export const CORE_SUPPORTING_COPY: LocalizedText = {
-  en: 'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.',
-  ja: '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。'
+  en: 'I build, integrate, debug, document, deploy, and support API-driven web systems across Python, TypeScript, Firebase, Cloud Run, PostgreSQL, Linux, and CI/CD.',
+  ja: 'Python、TypeScript、Firebase、Cloud Run、PostgreSQL、Linux、CI/CD を使い、API 駆動の Web システムを構築、連携、デバッグ、文書化、デプロイ、サポートします。'
 }
 
 export const SECONDARY_SPECIALIZATION: LocalizedText = {
-  en: 'AI-assisted development with GPT/Codex is an execution accelerator I use for implementation speed, debugging, and documentation, not the headline value I lead with.',
-  ja: 'GPT/Codex を使った AI 支援開発は、実装速度、デバッグ、ドキュメント整備を高めるための加速手段であり、主役として前面に出す価値ではありません。'
+  en: 'I am strongest where product requirements, APIs, data models, deployment, documentation, and support meet.',
+  ja: 'プロダクト要件、API、データモデル、デプロイ、ドキュメント、サポートが交差する領域を得意としています。'
 }
 
 export const DEFAULT_PROFILE_LINKS = [
@@ -102,14 +102,14 @@ export function sanitizeProfileItems(items: string[], fallback: string[]) {
 
 export const HOME_PROOF_POINTS: LocalizedList = {
   en: [
-    'APIs, auth, webhooks, SQL, cloud operations',
-    'End-to-end delivery: scope, build, deploy, troubleshoot',
-    'Public products and operational tooling shipped in production'
+    'Target roles: implementation, developer support, technical support, integration',
+    'APIs, auth, webhooks, SQL, cloud operations, and runbooks',
+    'Public products, marketplace systems, and operational tooling shipped in production'
   ],
   ja: [
-    'API、認証、Webhook、SQL、クラウド運用',
-    'スコープ整理から構築、デプロイ、トラブルシュートまで',
-    '公開プロダクトと運用ツールを本番で出荷'
+    '対象ロール: 実装、開発者サポート、技術サポート、連携',
+    'API、認証、Webhook、SQL、クラウド運用、ランブック',
+    '公開プロダクト、マーケットプレイスシステム、運用ツールを本番で出荷'
   ]
 }
 
@@ -159,21 +159,23 @@ export const HOW_I_WORK_STEPS: WorkStep[] = [
 export const INTEGRATION_AUTOMATION_ITEMS: LocalizedList = {
   en: [
     'API integration',
+    'Customer-facing technical troubleshooting',
+    'Technical onboarding and support runbooks',
     'Webhook consumers and producers',
     'Background processing',
     'SQL and data validation',
     'Cloud-hosted services',
-    'Debugging production data and auth issues',
-    'AI-assisted development with GPT/Codex for implementation speed, debugging, and documentation'
+    'Debugging production data and auth issues'
   ],
   ja: [
     'API 連携',
+    '顧客向けの技術的トラブルシュート',
+    '技術オンボーディングとサポート用ランブック',
     'Webhook の consumer / producer 実装',
     'バックグラウンド処理',
     'SQL とデータバリデーション',
     'クラウドホスト型サービス',
-    '本番データと認証まわりの不具合調査',
-    '実装速度、デバッグ、ドキュメント整備を高めるための GPT/Codex を使った AI 支援開発'
+    '本番データと認証まわりの不具合調査'
   ]
 }
 
@@ -265,12 +267,12 @@ const PROJECT_NARRATIVES: Record<string, ProjectNarrative> = {
       ja: 'ストアを単なる見せ方ではなく、引き継ぎが明確で手作業が減る、再現可能なバックエンドワークフローとして整えた。'
     }
   },
-  arm64adk: {
-    key: 'arm64adk',
+  apkworkbench: {
+    key: 'apkworkbench',
     priority: 4,
     featured: false,
     summary: {
-      en: 'Operational developer toolkit case study focused on workflow orchestration, packaging, and supportable tooling for Linux ARM64.',
+      en: 'Operational developer-tooling case study focused on workflow orchestration, packaging, and supportable Android tooling for Linux ARM64.',
       ja: 'Linux ARM64 向けに、ワークフロー制御、配布、保守しやすさを重視した開発ツールケーススタディ。'
     },
     problem: {
@@ -327,7 +329,7 @@ const PROJECT_NARRATIVES: Record<string, ProjectNarrative> = {
 
 export const ABOUT_DEFAULTS = {
   intro: {
-    en: 'I work as a technical delivery partner on messy implementation problems where requirements, APIs, auth, operations, and production support all need to line up.',
+    en: 'I work on implementation and developer-support problems where requirements, APIs, auth, operations, documentation, and production support all need to line up.',
     ja: '要件、API、認証、運用、本番サポートを一つの delivery としてそろえる必要がある、複雑な実装案件で力を発揮します。'
   },
   sections: [
@@ -339,12 +341,13 @@ export const ABOUT_DEFAULTS = {
       },
       items: {
         en: [
-          'Build API-first integrations, automations, and backend systems in Python and TypeScript.',
+          'Build, integrate, debug, document, deploy, and support API-driven web systems in Python and TypeScript.',
+          'Handle customer-facing troubleshooting, technical onboarding, runbooks, and escalation-quality bug reproduction.',
           'Carry delivery from technical discovery through implementation, deployment, and production support.',
           'Treat auth, data validation, cloud operations, and troubleshooting as part of the job, not a separate handoff.'
         ],
         ja: [
-          'API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築する。',
+          'API 駆動の Web システムを Python / TypeScript で構築、連携、デバッグ、文書化、デプロイ、サポートする。',
           '技術調査から実装、デプロイ、本番サポートまで一気通貫で担当する。',
           '認証、データバリデーション、クラウド運用、トラブル対応を別工程ではなく delivery の一部として扱う。'
         ]
@@ -359,6 +362,7 @@ export const ABOUT_DEFAULTS = {
       items: {
         en: [
           'QuestByCycle: public Flask/PostgreSQL system with auth, background jobs, deployment, and post-launch support.',
+          'Moonshine Art: private marketplace architecture spanning checkout, seller onboarding, fulfillment, admin/support workflows, and compliance surfaces.',
           'CrowdPM Platform: secure ingest, auth, partner APIs, data processing, and operator-facing monitoring in one cloud-hosted system.',
           'Public tooling and operational utilities shipped around real constraints, including Linux workflows and developer tooling.'
         ],
@@ -405,12 +409,12 @@ export const ABOUT_DEFAULTS = {
 export const RESUME_DEFAULTS = {
   summary: {
     en: [
-      'Implementation / Integration Engineer.',
-      'I build API-first integrations, automations, and backend systems in Python and TypeScript, from technical discovery through deployment and production support.'
+      'Implementation / Developer Support Engineer.',
+      'I build, integrate, debug, document, deploy, and support API-driven web systems across Python, TypeScript, Firebase, Cloud Run, PostgreSQL, Linux, and CI/CD.'
     ],
     ja: [
-      '実装 / 連携エンジニア。',
-      '技術調査からデプロイと本番サポートまで、API ファーストな連携、業務自動化、バックエンドシステムを Python / TypeScript で構築します。'
+      '実装 / 開発者サポートエンジニア。',
+      'Python、TypeScript、Firebase、Cloud Run、PostgreSQL、Linux、CI/CD を使い、API 駆動の Web システムを構築、連携、デバッグ、文書化、デプロイ、サポートします。'
     ]
   },
   sections: [
@@ -422,7 +426,7 @@ export const RESUME_DEFAULTS = {
       },
       items: {
         en: [
-          'API integration, auth flows, webhooks, background processing, SQL, data validation, and cloud-hosted services.',
+          'API integration, customer-facing technical troubleshooting, auth flows, webhooks, background processing, SQL, data validation, and cloud-hosted services.',
           'Python and TypeScript delivery across backend services, operational tooling, and public web products.',
           'Production troubleshooting, deployment, monitoring, and documentation after launch.'
         ],
@@ -442,6 +446,7 @@ export const RESUME_DEFAULTS = {
       items: {
         en: [
           'QuestByCycle: public Flask/PostgreSQL system with auth, background jobs, deployment, and production support.',
+          'Moonshine Art: marketplace implementation case study spanning checkout, seller onboarding, fulfillment, admin/support workflows, and compliance surfaces.',
           'CrowdPM Platform: secure ingest, auth, partner APIs, data processing, and operator-facing monitoring in one cloud-hosted system.',
           'Operational tooling shipped around real constraints, including Linux workflows and developer-platform utilities.'
         ],
@@ -542,7 +547,8 @@ export function identifyProject(project: Pick<ProjectRecord, 'id' | 'title' | 'r
   if (candidates.includes('crowdpmplatform')) return 'crowdpmplatform'
   if (candidates.includes('questbycycle')) return 'questbycycle'
   if (candidates.includes('moonshineart')) return 'moonshineart'
-  if (candidates.includes('arm64adk')) return 'arm64adk'
+  if (candidates.includes('apkworkbench')) return 'apkworkbench'
+  if (candidates.includes('arm64adk')) return 'apkworkbench'
   if (candidates.includes('dripcopy')) return 'dripcopy'
   return ''
 }
