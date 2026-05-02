@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
+import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { db, storage } from '../../lib/firebase'
 
 type ResumeUrls = { en: string; ja: string }
@@ -37,6 +37,10 @@ const stringifyList = (value: unknown) => {
   }
   return typeof value === 'string' ? value : ''
 }
+
+const isFirebaseStorageResumeUrl = (value: string) =>
+  /^https:\/\/firebasestorage\.googleapis\.com\//i.test(value.trim()) &&
+  /\/o\/resumes%2F/i.test(value)
 
 export default function AdminResume() {
   const [urls, setUrls] = useState<ResumeUrls>({ en: '', ja: '' })
@@ -117,10 +121,18 @@ export default function AdminResume() {
     setMessage(null)
     setUploading(prev => ({ ...prev, [lang]: true }))
     try {
+      const previousUrl = urls[lang].trim()
       const storageRef = ref(storage, `resumes/${lang}-${Date.now()}.pdf`)
       await uploadBytes(storageRef, file)
       const downloadURL = await getDownloadURL(storageRef)
       await setDoc(doc(db, 'public', 'resume'), { [`url_${lang}`]: downloadURL }, { merge: true })
+      if (previousUrl && isFirebaseStorageResumeUrl(previousUrl)) {
+        try {
+          await deleteObject(ref(storage, previousUrl))
+        } catch (cleanupError) {
+          console.warn(`Failed to remove previous ${lang} resume archive`, cleanupError)
+        }
+      }
       setUrls(prev => ({ ...prev, [lang]: downloadURL }))
       setMessage(`Uploaded ${lang === 'en' ? 'English' : '日本語'} resume.`)
     } catch (err: any) {
